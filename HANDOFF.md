@@ -66,6 +66,11 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
+- **Preview image cache:** `PageCanvas` keeps a `src → HTMLImageElement` cache so redraws
+  (delete, resize, format change) no longer re-decode every image — deleting a card is now
+  0 re-decodes (was N) and the preview no longer "reloads from scratch"/flashes. Cache is
+  rebuilt from the current page each draw (bounded memory; removed images dropped). Page
+  navigation still decodes the newly-shown page once.
 - **Crop-mark fix:** crop marks no longer overflow into adjacent cards at small bleed.
   New pure `cropMarkSpan(limit, gap, len)` in `pdfGenerator.js` clamps each mark's outward
   reach to the available space — inner edges to `bleed` (the midline between ganged cards),
@@ -100,6 +105,8 @@ All verified live + `npm run lint` clean + `npm run build` green.
 
 ## Conventions
 
-- Commit/push only when asked. Repo is solo, history is direct-to-`main`.
+- Commit + push to `main` after every change unless told to wait (user pref, 2026-06-19).
+  Repo is solo, history is direct-to-`main`. Write the commit message to a temp file and use
+  `git commit -F <tmpfile>` — PowerShell mangles multi-line `-m` here-strings.
 - After UI edits: run the app, screenshot empty + populated, then `npm run build`.
 - Treat "AI-default" looks (Inter, generic purple, emoji icons) as signals to diverge.

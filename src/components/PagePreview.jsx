@@ -59,6 +59,9 @@ function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale
 // ── Singola pagina canvas ─────────────────────────────────────
 export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) {
     const canvasRef = useRef();
+    // Cache src(objectURL) -> HTMLImageElement decodificata: evita di ri-decodificare
+    // le immagini a ogni ridisegno (cancellazione carta, resize, cambio pagina/formato).
+    const cacheRef = useRef(new Map());
     const info = useMemo(() => getGridInfo(formatKey, bleedMm), [formatKey, bleedMm]);
     const scale = previewW / info.pageW;
     const previewH = Math.round(info.pageH * scale);
@@ -71,14 +74,24 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) 
         canvas.height = previewH;
         const ctx = canvas.getContext('2d');
 
+        const cache = cacheRef.current;
+        const load = (src) => {
+            if (!src) return null;
+            return cache.get(src) || loadImage(src); // hit in cache = nessun re-decode
+        };
+
         const draw = async () => {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, previewW, previewH);
 
-            const imgs = await Promise.all(
-                (pageImages || []).map(src => loadImage(src))
-            );
+            const imgs = await Promise.all((pageImages || []).map(load));
             if (cancelled) return;
+
+            // Ricostruisce la cache con le sole immagini della pagina corrente
+            // (memoria limitata; le immagini cancellate vengono scartate e liberate).
+            const next = new Map();
+            (pageImages || []).forEach((src, i) => { if (src && imgs[i]) next.set(src, imgs[i]); });
+            cacheRef.current = next;
 
             const { cols, rows, cellW, cellH, offsetX, offsetY } = info;
             const bleedPx = bleedMm * scale;
