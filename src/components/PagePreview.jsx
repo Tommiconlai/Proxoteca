@@ -174,6 +174,7 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
                             className="nav-btn"
                             disabled={!canNavPrev}
                             onClick={() => setPageOffset(p => p - 4)}
+                            aria-label="Pagine precedenti"
                         >‹</button>
                         <span className="nav-info">
                             {pageOffset + 1}–{Math.min(pageOffset + 4, totalPages)} / {totalPages}
@@ -182,6 +183,7 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
                             className="nav-btn"
                             disabled={!canNavNext}
                             onClick={() => setPageOffset(p => p + 4)}
+                            aria-label="Pagine successive"
                         >›</button>
                     </div>
                 )}

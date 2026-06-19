@@ -15,7 +15,7 @@ export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBlee
             {/* Formato carta */}
             <div className="sidebar-section">
                 <h2>Formato carta</h2>
-                <div className="glass-card" style={{ padding: '12px' }}>
+                <div className="glass-card compact">
                     <div className="select-wrapper">
                         <select value={formatKey} onChange={e => setFormatKey(e.target.value)}>
                             {Object.keys(PAPER_FORMATS).map(k => {
@@ -30,7 +30,7 @@ export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBlee
             {/* Bordo al vivo */}
             <div className="sidebar-section">
                 <h2>Bordo al vivo</h2>
-                <div className="glass-card" style={{ padding: '12px' }}>
+                <div className="glass-card compact">
                     <div className="select-wrapper">
                         <select value={bleedMm} onChange={e => setBleedMm(parseFloat(e.target.value))}>
                             {BLEED_OPTIONS.map(v => (
@@ -44,7 +44,7 @@ export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBlee
             {/* Risoluzione DPI */}
             <div className="sidebar-section">
                 <h2>Risoluzione</h2>
-                <div className="glass-card" style={{ padding: '12px' }}>
+                <div className="glass-card compact">
                     <div className="select-wrapper">
                         <select value={dpi} onChange={e => setDpi(parseInt(e.target.value, 10))}>
                             {DPI_OPTIONS.map(v => (
@@ -58,7 +58,7 @@ export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBlee
             {/* Info layout */}
             <div className="sidebar-section">
                 <h2>Layout</h2>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <div className="layout-preview" style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
                     <PageCanvas
                         pageImages={[]}
                         formatKey={formatKey}

@@ -4,6 +4,7 @@ import ImageUploader from './components/ImageUploader';
 import PageSettings from './components/PageSettings';
 import PagePreview from './components/PagePreview';
 import { generatePDF, getGridInfo } from './utils/pdfGenerator';
+import { IconFile, IconTrash, IconAlert, IconLayout, IconX } from './components/icons';
 
 export default function App() {
   const [images, setImages] = useState([]);
@@ -55,7 +56,9 @@ export default function App() {
     <div className="app">
       {/* ── Header ── */}
       <header className="app-header">
+        <span className="logo-icon"><IconLayout size={20} /></span>
         <h1>ImpaginaProxies</h1>
+        <span className="tagline">Impagina proxy per la stampa</span>
       </header>
 
       {/* ── Body ── */}
@@ -80,17 +83,13 @@ export default function App() {
             >
               {loading
                 ? <><span className="spinner" /> Generazione…</>
-                : <>📄 Genera PDF</>
+                : <><IconFile size={18} /> Genera PDF</>
               }
             </button>
             {error && (
-              <div className="info-box" style={{
-                borderColor: 'rgba(239,68,68,0.4)',
-                color: '#fca5a5',
-                background: 'rgba(239,68,68,0.08)',
-                marginTop: 8,
-              }}>
-                ⚠️ {error}
+              <div className="info-box info-box-error">
+                <IconAlert size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>{error}</span>
               </div>
             )}
           </div>
@@ -117,17 +116,17 @@ export default function App() {
           </div>
 
           {/* ── Riga inferiore: Thumbnails ── */}
-          {images.length > 0 ? (
+          {images.length > 0 && (
             <div className="images-section">
               <div className="images-header">
                 <h2>Immagini caricate</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="images-actions">
                   <span className="badge">{images.length} img</span>
-                  <span className="badge">{missing > 0 && (
-                    <span className="badge">{missing} immagini mancanti</span>
-                  )}</span>
+                  {missing > 0 && (
+                    <span className="badge badge-warning">{missing} immagini mancanti</span>
+                  )}
                   <button className="btn-secondary" onClick={handleClearAll}>
-                    🗑 Elimina tutte
+                    <IconTrash size={15} /> Elimina tutte
                   </button>
                 </div>
               </div>
@@ -141,15 +140,11 @@ export default function App() {
                       className="image-list-remove"
                       onClick={() => handleRemove(item.id)}
                       title="Rimuovi"
-                    >✕</button>
+                      aria-label={`Rimuovi ${item.file.name}`}
+                    ><IconX size={14} /></button>
                   </div>
                 ))}
               </div>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <span className="empty-icon">📂</span>
-              <p>Nessuna immagine caricata.<br />Trascina dei file nell&apos;area qui sopra.</p>
             </div>
           )}
 

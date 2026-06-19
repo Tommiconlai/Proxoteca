@@ -5,8 +5,6 @@
  * Orientamento: auto-calcolato per massimizzare il numero di immagini.
  */
 
-import { jsPDF } from 'jspdf';
-
 export const CARD_W = 63;   // mm
 export const CARD_H = 88;   // mm
 export const PAGE_MARGIN = 4; // mm
@@ -147,6 +145,9 @@ export async function generatePDF(files, formatKey, bleedMm, dpi = 600) {
   if (cols === 0 || rows === 0) {
     throw new Error("Il formato carta è troppo piccolo per almeno un'immagine.");
   }
+
+  // jsPDF caricato on-demand: tiene jspdf/html2canvas fuori dal bundle iniziale
+  const { jsPDF } = await import('jspdf');
 
   const doc = new jsPDF({
     unit: 'mm',
