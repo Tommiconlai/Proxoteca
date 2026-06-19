@@ -2,8 +2,14 @@ import { PAPER_FORMATS, CARD_W, CARD_H, getGridInfo } from '../utils/pdfGenerato
 
 const DPI_OPTIONS = [150, 300, 600, 800, 1000, 1200];
 const BLEED_OPTIONS = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
+const BLEED_STYLE_OPTIONS = [
+    { value: 'auto', label: 'Auto (per carta)' },
+    { value: 'mirror', label: 'Specchio' },
+    { value: 'stretch', label: 'Stira' },
+    { value: 'black', label: 'Nero' },
+];
 
-export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBleedMm, dpi, setDpi }) {
+export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBleedMm, bleedStyle, setBleedStyle, dpi, setDpi }) {
     const { cols, rows, perPage } = getGridInfo(formatKey, bleedMm);
     const [pw, ph] = PAPER_FORMATS[formatKey];
     const totalWmm = (CARD_W + bleedMm * 2).toFixed(1);
@@ -34,6 +40,20 @@ export default function PageSettings({ formatKey, setFormatKey, bleedMm, setBlee
                         <select value={bleedMm} onChange={e => setBleedMm(parseFloat(e.target.value))}>
                             {BLEED_OPTIONS.map(v => (
                                 <option key={v} value={v}>{v.toFixed(1)} mm</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stile abbondanza */}
+            <div className="sidebar-section">
+                <h2>Stile abbondanza</h2>
+                <div className="glass-card compact">
+                    <div className="select-wrapper">
+                        <select value={bleedStyle} onChange={e => setBleedStyle(e.target.value)}>
+                            {BLEED_STYLE_OPTIONS.map(o => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                         </select>
                     </div>

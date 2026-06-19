@@ -11,6 +11,7 @@ export default function App() {
   const [images, setImages] = useState([]);
   const [formatKey, setFormatKey] = useState('A3');
   const [bleedMm, setBleedMm] = useState(2);
+  const [bleedStyle, setBleedStyle] = useState('auto'); // auto | mirror | stretch | black
   const [dpi, setDpi] = useState(600);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -63,7 +64,7 @@ export default function App() {
     setError(null);
     setLoading(true);
     try {
-      await generatePDF(images.map(i => ({ file: i.file, bleedMode: i.bleedMode })), formatKey, bleedMm, dpi);
+      await generatePDF(images.map(i => ({ file: i.file, bleedMode: i.bleedMode })), formatKey, bleedMm, dpi, bleedStyle);
     } catch (err) {
       setError(err.message || 'Errore durante la generazione del PDF.');
     } finally {
@@ -100,6 +101,8 @@ export default function App() {
             setFormatKey={setFormatKey}
             bleedMm={bleedMm}
             setBleedMm={setBleedMm}
+            bleedStyle={bleedStyle}
+            setBleedStyle={setBleedStyle}
             dpi={dpi}
             setDpi={setDpi}
           />
@@ -136,6 +139,7 @@ export default function App() {
             images={images}
             formatKey={formatKey}
             bleedMm={bleedMm}
+            bleedStyle={bleedStyle}
             onRemove={handleRemove}
             onAddPhotos={open}
             onImportScryfall={() => setImportOpen(true)}

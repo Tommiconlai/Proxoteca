@@ -135,6 +135,20 @@ function blit(ctx, img, sx, sy, sw, sh, dx, dy, dw, dh, flipX, flipY) {
 }
 
 /**
+ * Risolve il modo di abbondanza effettivo combinando la modalità per-carta
+ * (`itemMode`) con lo stile globale scelto dall'utente (`style`).
+ * - style 'auto'        → usa la modalità della carta (Scryfall: mirror/stretch)
+ * - style mirror/stretch/black → forza lo stile, ma SOLO sulle carte che hanno
+ *   già abbondanza; gli upload manuali ('none') restano cover (no distorsione).
+ */
+export function resolveBleedMode(itemMode, style) {
+  const m = itemMode || 'none';
+  if (!style || style === 'auto') return m;
+  if (m === 'none') return 'none';
+  return style;
+}
+
+/**
  * Disegna `img` come carta a misura di taglio (1:1) nell'area centrale della
  * cella e genera l'abbondanza (bleed) attorno. Ricrea i bordi mancanti per il
  * taglio al vivo di immagini senza abbondanza (es. Scryfall).
@@ -142,6 +156,8 @@ function blit(ctx, img, sx, sy, sw, sh, dx, dy, dw, dh, flipX, flipY) {
  *   Ideale per carte bordo nero.
  * - mode 'mirror': specchia verso l'esterno la fascia esterna della carta.
  *   Più naturale sulle full-art.
+ * - mode 'black': abbondanza nera piena. Per carte bordo-nero quando si vuole
+ *   un taglio al vivo pulito senza stirare/specchiare i pixel del bordo.
  * bleedPx = 0 → la carta riempie tutta la cella.
  */
 export function drawCardWithBleed(ctx, img, x, y, cellW, cellH, bleedPx, mode = 'stretch') {
@@ -157,6 +173,16 @@ export function drawCardWithBleed(ctx, img, x, y, cellW, cellH, bleedPx, mode = 
   // Carta a misura di taglio (aspect carta ≈ trim → nessuna distorsione visibile)
   ctx.drawImage(img, 0, 0, iw, ih, tx, ty, tw, th);
   if (b <= 0) return;
+
+  if (mode === 'black') {
+    // Anello nero attorno al trim (le bande alto/basso coprono anche gli angoli)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x, y, cellW, b);              // alto (piena larghezza)
+    ctx.fillRect(x, y + cellH - b, cellW, b);  // basso (piena larghezza)
+    ctx.fillRect(x, ty, b, th);                // sinistra
+    ctx.fillRect(x + cellW - b, ty, b, th);    // destra
+    return;
+  }
 
   if (mode === 'mirror') {
     // Larghezza/altezza (in px sorgente) della fascia da specchiare
@@ -234,7 +260,7 @@ function compressImage(img, cellWmm, cellHmm, dpi, bleedMm, bleedMode, quality =
 /**
  * Genera e scarica il PDF.
  */
-export async function generatePDF(items, formatKey, bleedMm, dpi = 600) {
+export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedStyle = 'auto') {
   if (!items || items.length === 0) throw new Error('Nessuna immagine selezionata.');
 
   const { cols, rows, cellW, cellH, pageW, pageH, orientation, offsetX, offsetY } = getGridInfo(formatKey, bleedMm);
@@ -270,7 +296,8 @@ export async function generatePDF(items, formatKey, bleedMm, dpi = 600) {
       // Carica, ridimensiona e comprimi prima di passare a jsPDF
       const item = items[imgIndex];
       const imgEl = await loadImageElement(item.file);
-      const jpeg = compressImage(imgEl, cellW, cellH, dpi, bleedMm, item.bleedMode);
+      const mode = resolveBleedMode(item.bleedMode, bleedStyle);
+      const jpeg = compressImage(imgEl, cellW, cellH, dpi, bleedMm, mode);
       doc.addImage(jpeg, 'JPEG', x, y, cellW, cellH);
       const limits = {
         left:  (col === 0 ? offsetX : 0) + bleedMm,

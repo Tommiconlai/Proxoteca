@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
-import { getGridInfo, CARD_W, CARD_H, cropMarkSpan, drawCardWithBleed } from '../utils/pdfGenerator';
+import { getGridInfo, CARD_W, CARD_H, cropMarkSpan, drawCardWithBleed, resolveBleedMode } from '../utils/pdfGenerator';
 import { IconX, IconPlus, IconImage, IconDownload } from './icons';
 
 // ── Carica un'immagine come HTMLImageElement (async) ─────────
@@ -57,7 +57,7 @@ function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale
 }
 
 // ── Singola pagina canvas ─────────────────────────────────────
-export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) {
+export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, previewW, empty }) {
     const canvasRef = useRef();
     // Cache src(objectURL) -> HTMLImageElement decodificata: evita di ri-decodificare
     // le immagini a ogni ridisegno (cancellazione carta, resize, cambio pagina/formato).
@@ -108,8 +108,8 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) 
                 const h = cellH * scale;
 
                 if (!empty && imgs[i]) {
-                    const mode = pageImages[i]?.bleedMode;
-                    if (mode && mode !== 'none') {
+                    const mode = resolveBleedMode(pageImages[i]?.bleedMode, bleedStyle);
+                    if (mode !== 'none') {
                         drawCardWithBleed(ctx, imgs[i], x, y, w, h, bleedPx, mode);
                     } else {
                         ctx.drawImage(imgs[i], x, y, w, h);
@@ -142,7 +142,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) 
 
         draw();
         return () => { cancelled = true; };
-    }, [pageImages, formatKey, bleedMm, previewW, empty, info, scale, previewH]);
+    }, [pageImages, formatKey, bleedMm, bleedStyle, previewW, empty, info, scale, previewH]);
 
     return (
         <canvas
@@ -153,7 +153,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) 
 }
 
 // ── Componente principale ─────────────────────────────────────
-export default function PagePreview({ images, formatKey, bleedMm, onRemove, onAddPhotos, onImportScryfall, isDragActive, missing }) {
+export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, onRemove, onAddPhotos, onImportScryfall, isDragActive, missing }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
     const [menuOpen, setMenuOpen] = useState(false);
@@ -229,6 +229,7 @@ export default function PagePreview({ images, formatKey, bleedMm, onRemove, onAd
                         pageImages={pageImages}
                         formatKey={formatKey}
                         bleedMm={bleedMm}
+                        bleedStyle={bleedStyle}
                         previewW={pageW}
                         empty={images.length === 0}
                     />
