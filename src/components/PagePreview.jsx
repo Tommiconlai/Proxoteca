@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { getGridInfo, CARD_W, CARD_H } from '../utils/pdfGenerator';
 
 const GAP_PX = 8; // gap tra le pagine affiancate in px
@@ -51,13 +51,14 @@ function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale
 // ── Singola pagina canvas ─────────────────────────────────────
 export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) {
     const canvasRef = useRef();
-    const info = getGridInfo(formatKey, bleedMm);
+    const info = useMemo(() => getGridInfo(formatKey, bleedMm), [formatKey, bleedMm]);
     const scale = previewW / info.pageW;
     const previewH = Math.round(info.pageH * scale);
 
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        let cancelled = false;
         canvas.width = previewW;
         canvas.height = previewH;
         const ctx = canvas.getContext('2d');
@@ -69,6 +70,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) 
             const imgs = await Promise.all(
                 (pageImages || []).map(src => loadImage(src))
             );
+            if (cancelled) return;
 
             const { cols, rows, cellW, cellH, offsetX, offsetY } = info;
             const bleedPx = bleedMm * scale;
@@ -106,6 +108,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, previewW, empty }) 
         };
 
         draw();
+        return () => { cancelled = true; };
     }, [pageImages, formatKey, bleedMm, previewW, empty, info, scale, previewH]);
 
     return (
@@ -122,9 +125,22 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
     const [containerW, setContainerW] = useState(0);
     const panelRef = useRef(null);
 
-    const info = getGridInfo(formatKey, bleedMm);
+    const info = useMemo(() => getGridInfo(formatKey, bleedMm), [formatKey, bleedMm]);
     const perPage = Math.max(1, info.perPage);
     const totalPages = images.length === 0 ? 1 : Math.ceil(images.length / perPage);
+
+    // Reset offset quando cambiano format/bleed — setState durante il render
+    // (pattern "You Might Not Need an Effect"), non dentro un useEffect.
+    const [prevFmt, setPrevFmt] = useState(formatKey);
+    const [prevBleed, setPrevBleed] = useState(bleedMm);
+    if (prevFmt !== formatKey || prevBleed !== bleedMm) {
+        setPrevFmt(formatKey);
+        setPrevBleed(bleedMm);
+        setPageOffset(0);
+    }
+
+    // Offset effettivo: clamp derivato durante il render (niente effect)
+    const offset = Math.min(pageOffset, Math.max(0, totalPages - 1));
 
     // Misura la larghezza del container con ResizeObserver
     useEffect(() => {
@@ -138,15 +154,20 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
         return () => ro.disconnect();
     }, []);
 
-    // Reset offset quando cambiano format/bleed
-    useEffect(() => setPageOffset(0), [formatKey, bleedMm]);
-    // Clamp offset
-    useEffect(() => {
-        if (pageOffset >= totalPages) setPageOffset(Math.max(0, totalPages - 1));
-    }, [totalPages, pageOffset]);
+    // Array immagini per pagina memoizzato: riferimenti stabili finché
+    // images/perPage/totalPages non cambiano, così PageCanvas non ricarica
+    // e ridisegna le immagini a ogni render del parent.
+    const pageImagesList = useMemo(
+        () => Array.from({ length: totalPages }, (_, pageIdx) =>
+            Array.from({ length: perPage }, (_, i) =>
+                images[pageIdx * perPage + i]?.preview ?? null
+            )
+        ),
+        [images, perPage, totalPages]
+    );
 
     const visiblePages = [0, 1, 2, 3]
-        .map(i => pageOffset + i)
+        .map(i => offset + i)
         .filter(p => p < totalPages);
 
     // Calcola la larghezza di ogni canvas in base allo spazio disponibile
@@ -156,13 +177,8 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
         ? Math.floor((containerW - GAP_PX * (numVisible - 1)) / numVisible)
         : 200; // fallback prima che ResizeObserver risponda
 
-    const getPageImages = (pageIdx) =>
-        Array.from({ length: perPage }, (_, i) =>
-            images[pageIdx * perPage + i]?.preview ?? null
-        );
-
-    const canNavPrev = pageOffset > 0;
-    const canNavNext = pageOffset + 4 < totalPages;
+    const canNavPrev = offset > 0;
+    const canNavNext = offset + 4 < totalPages;
 
     return (
         <div className="preview-panel" ref={panelRef}>
@@ -173,16 +189,16 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
                         <button
                             className="nav-btn"
                             disabled={!canNavPrev}
-                            onClick={() => setPageOffset(p => p - 4)}
+                            onClick={() => setPageOffset(offset - 4)}
                             aria-label="Pagine precedenti"
                         >‹</button>
                         <span className="nav-info">
-                            {pageOffset + 1}–{Math.min(pageOffset + 4, totalPages)} / {totalPages}
+                            {offset + 1}–{Math.min(offset + 4, totalPages)} / {totalPages}
                         </span>
                         <button
                             className="nav-btn"
                             disabled={!canNavNext}
-                            onClick={() => setPageOffset(p => p + 4)}
+                            onClick={() => setPageOffset(offset + 4)}
                             aria-label="Pagine successive"
                         >›</button>
                     </div>
@@ -192,7 +208,7 @@ export default function PagePreview({ images, formatKey, bleedMm }) {
                 {visiblePages.map(pageIdx => (
                     <div key={pageIdx} className="preview-page-wrap">
                         <PageCanvas
-                            pageImages={getPageImages(pageIdx)}
+                            pageImages={pageImagesList[pageIdx]}
                             formatKey={formatKey}
                             bleedMm={bleedMm}
                             previewW={pageCanvasW}

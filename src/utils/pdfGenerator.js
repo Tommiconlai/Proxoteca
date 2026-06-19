@@ -114,7 +114,7 @@ function loadImageElement(file) {
  * alle dimensioni esatte della cella PDF e lo comprimiamo in JPEG 0.85.
  * Riduzione tipica: 5–10× per immagine.
  */
-function compressImage(img, cellWmm, cellHmm, dpi, quality = 0.97) {
+function compressImage(img, cellWmm, cellHmm, dpi, quality = 0.85) {
   const mmToPx = MM_TO_PX(dpi);
   const w = Math.round(cellWmm * mmToPx);
   const h = Math.round(cellHmm * mmToPx);

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import './index.css';
 import ImageUploader from './components/ImageUploader';
 import PageSettings from './components/PageSettings';
@@ -14,6 +14,14 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { perPage } = getGridInfo(formatKey, bleedMm);
+
+  // Revoca gli object URL residui allo smontaggio (evita leak di memoria).
+  // imagesRef tiene il riferimento aggiornato senza ri-registrare l'effect.
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
+  useEffect(() => () => {
+    imagesRef.current.forEach(i => URL.revokeObjectURL(i.preview));
+  }, []);
 
   const handleImagesAdded = useCallback((files) => {
     const newItems = files.map(file => ({
@@ -50,7 +58,7 @@ export default function App() {
     }
   };
 
-  const missing = images.length === 0 ? 0 : (perPage - (images.length % perPage)) % perPage;
+  const missing = images.length === 0 || perPage === 0 ? 0 : (perPage - (images.length % perPage)) % perPage;
 
   return (
     <div className="app">
