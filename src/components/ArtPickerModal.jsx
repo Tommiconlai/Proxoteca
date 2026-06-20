@@ -20,7 +20,7 @@ export default function ArtPickerModal({ card, onClose, onPick }) {
 
     const pick = async (p) => {
         setPicking(true);
-        try { await onPick(p.png, name); }
+        try { await onPick(p.png, name, p.set, p.collector); }
         catch (e) { setError(e.message || 'Download failed.'); setPicking(false); }
     };
 

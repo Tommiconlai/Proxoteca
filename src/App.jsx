@@ -6,8 +6,8 @@ import PagePreview from './components/PagePreview';
 import ScryfallImportModal from './components/ScryfallImportModal';
 import ArtPickerModal from './components/ArtPickerModal';
 import { generatePDF, getGridInfo, PAPER_FORMATS } from './utils/pdfGenerator';
-import { downloadAsFile } from './utils/scryfall';
-import { IconFile, IconAlert, IconLayout, IconTrash } from './components/icons';
+import { downloadAsFile, buildDeckList } from './utils/scryfall';
+import { IconFile, IconAlert, IconLayout, IconTrash, IconDownload } from './components/icons';
 
 // Lettura numerica da localStorage con default (null/NaN → default, 0 valido).
 const readNum = (k, d) => {
@@ -35,6 +35,7 @@ export default function App() {
   const [sheetH, setSheetH] = useState(() => readNum('ip:sheetH', 297) || 297);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState(null); // carta di cui cambiare l'art
   // Foglio personalizzato in mm (sheetW/H sono nell'unità scelta: mm o inch).
@@ -70,11 +71,12 @@ export default function App() {
 
   // Crea gli item immagine. entries: [{file, bleedMode}].
   const addItems = (entries) => {
-    const newItems = entries.map(({ file, bleedMode }) => ({
+    const newItems = entries.map(({ file, bleedMode, name, set, collector, primary }) => ({
       file,
       preview: URL.createObjectURL(file),
       id: `${file.name}-${Date.now()}-${Math.random()}`,
       bleedMode: bleedMode || 'none', // 'stretch'/'mirror' per Scryfall, 'none' per upload
+      name, set, collector, primary,  // metadati Scryfall per il salvataggio (undefined sugli upload manuali)
     }));
     setImages(prev => [...prev, ...newItems]);
     setError(null);
@@ -112,15 +114,39 @@ export default function App() {
   });
 
   // Cambia art: scarica la stampa scelta e sostituisce file+preview (id/bleedMode invariati).
-  const handleReplaceArt = async (png, name) => {
+  const handleReplaceArt = async (png, name, set, collector) => {
     const file = await downloadAsFile(png, name);
     const preview = URL.createObjectURL(file);
     setImages(prev => prev.map(it => {
       if (it.id !== editingId) return it;
       URL.revokeObjectURL(it.preview);
-      return { ...it, file, preview };
+      // Aggiorna l'edizione così il salvataggio segue la stampa scelta (set lowercase
+      // per coerenza con l'import; collector mantiene il case — Scryfall è case-sensitive).
+      return { ...it, file, preview, set: set != null ? set.toLowerCase() : it.set, collector: collector != null ? collector : it.collector };
     }));
     setEditingId(null);
+  };
+
+  // Salva la lista delle carte Scryfall in un .txt (formato deck-list → ricaricabile
+  // incollandola in "Importa da Scryfall"). Gli upload manuali non entrano nel testo.
+  const handleSaveProject = () => {
+    setError(null); setNotice(null);
+    const { text, cards, custom } = buildDeckList(images);
+    if (!cards) {
+      setError(custom
+        ? 'Only custom images — project save covers Scryfall cards only.'
+        : 'No cards to save.');
+      return;
+    }
+    const blob = new Blob([text + '\n'], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'impagina-proxies.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setNotice(custom
+      ? `Saved ${cards} Scryfall card${cards > 1 ? 's' : ''}. ${custom} custom image${custom > 1 ? 's' : ''} not included (text can't store images).`
+      : `Saved ${cards} Scryfall card${cards > 1 ? 's' : ''} to impagina-proxies.txt.`);
   };
 
   const handleGenerate = async () => {
@@ -200,9 +226,17 @@ export default function App() {
               }
             </button>
             {images.length > 0 && (
+              <button className="btn-secondary" onClick={handleSaveProject}>
+                <IconDownload size={15} /> Save list
+              </button>
+            )}
+            {images.length > 0 && (
               <button className="btn-secondary" onClick={handleClearAll}>
                 <IconTrash size={15} /> Delete all
               </button>
+            )}
+            {notice && (
+              <div className="info-box"><span>{notice}</span></div>
             )}
             {error && (
               <div className="info-box info-box-error">

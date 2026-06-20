@@ -98,7 +98,7 @@ export async function fetchPrints(name) {
     .map((c) => {
       const face = c.card_faces?.find((f) => f.name?.toLowerCase() === target);
       const u = face?.image_uris || c.image_uris || c.card_faces?.[0]?.image_uris || {};
-      return { id: c.id, set: (c.set || '').toUpperCase(), setName: c.set_name || '', thumb: u.small || u.normal, png: u.png || u.large };
+      return { id: c.id, set: (c.set || '').toUpperCase(), collector: c.collector_number || '', setName: c.set_name || '', thumb: u.small || u.normal, png: u.png || u.large };
     })
     .filter((p) => p.thumb && p.png);
 }
@@ -191,9 +191,12 @@ export async function fetchScryfallImages(entries, onProgress) {
     }
     // full-art / borderless → mirror; altrimenti edge-stretch (bordo nero)
     const bleedMode = card.full_art || card.border_color === 'borderless' ? 'mirror' : 'stretch';
-    for (const face of imageFaces(card)) {
-      tasks.push({ url: face.url, name: face.name, qty: e.qty, bleedMode });
-    }
+    imageFaces(card).forEach((face, idx) => {
+      // faceName = nome faccia (filename, retro DFC incluso); name = nome cercato
+      // (front) + set/collector → metadati per il salvataggio progetto. primary =
+      // faccia anteriore: il salvataggio conta solo quella per non raddoppiare le DFC.
+      tasks.push({ url: face.url, faceName: face.name, name: e.name, set: e.set, collector: e.collector, qty: e.qty, bleedMode, primary: idx === 0 });
+    });
   }
 
   // 3) Scarica i Blob (concorrenza limitata) ed espandi in File per quantità.
@@ -215,13 +218,14 @@ export async function fetchScryfallImages(entries, onProgress) {
   tasks.forEach((t, i) => {
     const blob = blobs[i];
     if (!blob) {
-      notFound.push(t.name);
+      notFound.push(t.faceName);
       return;
     }
     for (let k = 0; k < t.qty; k++) {
       files.push({
-        file: new File([blob], `${sanitizeName(t.name)}.png`, { type: 'image/png' }),
+        file: new File([blob], `${sanitizeName(t.faceName)}.png`, { type: 'image/png' }),
         bleedMode: t.bleedMode,
+        name: t.name, set: t.set, collector: t.collector, primary: t.primary,
       });
     }
   });
@@ -242,6 +246,31 @@ export function deckLine(qty, name, set, cn) {
   if (!name) return '';
   const tail = set && cn ? ` (${String(set).toUpperCase()}) ${cn}` : '';
   return `${qty || 1} ${name}${tail}`;
+}
+
+/**
+ * Serializza le carte Scryfall presenti in una deck-list "qty Nome (SET) cn"
+ * (stesso formato dell'import → ricaricabile incollandola). Conta solo le facce
+ * primarie (front) così le DFC non raddoppiano la quantità. Gli upload manuali
+ * (senza `name`) non sono salvabili nel testo: vengono contati a parte.
+ * @param {{name?:string,set?:string,collector?:string,primary?:boolean}[]} items
+ * @returns {{text:string, cards:number, custom:number}}
+ */
+export function buildDeckList(items) {
+  const map = new Map();
+  let custom = 0;
+  for (const it of items || []) {
+    if (!it.name) { custom++; continue; }   // upload manuale: niente metadati
+    if (it.primary === false) continue;      // conta solo la faccia anteriore
+    const set = it.set || '';
+    const collector = it.collector || '';
+    const key = `${it.name}|${set}|${collector}`;
+    const e = map.get(key) || { name: it.name, set, collector, qty: 0 };
+    e.qty++;
+    map.set(key, e);
+  }
+  const text = [...map.values()].map((e) => deckLine(e.qty, e.name, e.set, e.collector)).join('\n');
+  return { text, cards: map.size, custom };
 }
 
 async function archidektList(id) {
