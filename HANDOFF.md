@@ -75,9 +75,10 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
   decklist, and fills the textarea as `qty Name` lines → the existing parse/import pipeline
   takes over. Sites: **Moxfield / Archidekt / Tappedout**. These send no CORS headers and the
   app is static, so requests go through a **public CORS proxy** (`corsproxy.io`); only the
-  proxy URL constant needs changing if it dies. Archidekt verified live end-to-end; Moxfield /
-  Tappedout use their documented API shapes (proxy forwarding confirmed, not tested with a real
-  deck). Manabox was left out — its API is CORS-OK but the web URL/JSON shape couldn't be verified.
+  proxy URL constant needs changing if it dies. **Archidekt and Moxfield verified live
+  end-to-end** (real decks); Tappedout uses its documented `?fmt=txt` shape (proxy forwarding
+  confirmed, not tested with a real deck). Manabox was left out — its API is CORS-OK but the web
+  URL/JSON shape couldn't be verified.
 - **Animated "Mostra crocini" checkbox:** native input hidden-but-focusable +
   an SVG (`.anim-check`) that morphs a circle into a checkmark on `:checked` (adapted Uiverse
   snippet — green swapped for the gold `--accent`, light ripple/base for the dark theme).
@@ -182,7 +183,7 @@ All verified live + `npm run lint` clean + `npm run build` green.
 
 - **Deck-link import depends on `corsproxy.io`** (a free public CORS proxy) for Moxfield /
   Archidekt / Tappedout. If it rate-limits or dies, swap `CORS_PROXY` in `utils/scryfall.js`
-  or add a tiny backend. Moxfield / Tappedout parsers use documented API shapes but weren't
+  or add a tiny backend. The Tappedout parser uses a documented `?fmt=txt` shape but wasn't
   tested with a real deck — fix the field path if an import comes back empty.
 - **`public/vite.svg`** is dead (favicon switched to `favicon.svg`). Safe to delete.
 - **A11y:** sidebar `<select>`s now carry `aria-label`s (field text is a decorative `<span>`);
