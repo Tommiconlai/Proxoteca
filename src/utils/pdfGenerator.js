@@ -33,8 +33,8 @@ function calcGrid(pw, ph, bleedMm, cardW, cardH) {
  * l'orientamento che permette più immagini per pagina.
  * cardW/cardH: dimensioni carta in mm (default carta da gioco standard 63×88).
  */
-export function getGridInfo(formatKey, bleedMm, cardW = CARD_W, cardH = CARD_H) {
-  const [fw, fh] = PAPER_FORMATS[formatKey];
+export function getGridInfo(formatKey, bleedMm, cardW = CARD_W, cardH = CARD_H, customSheet = null) {
+  const [fw, fh] = formatKey === 'custom' && customSheet ? customSheet : (PAPER_FORMATS[formatKey] || PAPER_FORMATS.A4);
   const cellW = cardW + bleedMm * 2;
   const cellH = cardH + bleedMm * 2;
 
@@ -87,7 +87,7 @@ export function cropMarkSpan(limit, gap, len) {
  * `bleed` sui bordi interni (mezzeria con la carta vicina), `bleed + offset`
  * sui bordi esterni (margine pagina).
  */
-function drawCropMarks(doc, x, y, bleed, limits, cardW, cardH) {
+function drawCropMarks(doc, x, y, bleed, limits, cardW, cardH, style = 'lines') {
   const markLength = 3;
   const gap = 0.5;
 
@@ -98,6 +98,22 @@ function drawCropMarks(doc, x, y, bleed, limits, cardW, cardH) {
 
   doc.setDrawColor(160, 160, 160);
   doc.setLineWidth(0.15);
+
+  if (style === 'corners') {
+    // Squadrette ad angolo: vertice spostato in fuori di g (resta nel gutter),
+    // due bracci di lunghezza len verso la carta. Inquadrano l'angolo di taglio.
+    const g = bleed > 0 ? Math.min(0.6, bleed) : 0.6;
+    const len = Math.min(markLength, cw * 0.45, ch * 0.45);
+    const bracket = (vx, vy, sx, sy) => {
+      doc.line(vx, vy, vx + sx * len, vy);
+      doc.line(vx, vy, vx, vy + sy * len);
+    };
+    bracket(cx - g, cy - g, 1, 1);            // alto-sx
+    bracket(cx + cw + g, cy - g, -1, 1);      // alto-dx
+    bracket(cx - g, cy + ch + g, 1, -1);      // basso-sx
+    bracket(cx + cw + g, cy + ch + g, -1, -1);// basso-dx
+    return;
+  }
 
   const L = cropMarkSpan(limits.left, gap, markLength);
   const R = cropMarkSpan(limits.right, gap, markLength);
@@ -264,10 +280,10 @@ function compressImage(img, cellWmm, cellHmm, dpi, bleedMm, bleedMode, quality =
 /**
  * Genera e scarica il PDF.
  */
-export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedStyle = 'auto', cardW = CARD_W, cardH = CARD_H, cropMarks = true) {
+export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedStyle = 'auto', cardW = CARD_W, cardH = CARD_H, cropMarks = true, cropStyle = 'lines', customSheet = null) {
   if (!items || items.length === 0) throw new Error('Nessuna immagine selezionata.');
 
-  const { cols, rows, cellW, cellH, pageW, pageH, orientation, offsetX, offsetY } = getGridInfo(formatKey, bleedMm, cardW, cardH);
+  const { cols, rows, cellW, cellH, pageW, pageH, orientation, offsetX, offsetY } = getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet);
 
   if (cols === 0 || rows === 0) {
     throw new Error("Il formato carta è troppo piccolo per almeno un'immagine.");
@@ -310,7 +326,7 @@ export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedSty
           up:    (row === 0 ? offsetY : 0) + bleedMm,
           down:  (row === rows - 1 ? offsetY : 0) + bleedMm,
         };
-        drawCropMarks(doc, x, y, bleedMm, limits, cardW, cardH);
+        drawCropMarks(doc, x, y, bleedMm, limits, cardW, cardH, cropStyle);
       }
 
       posOnPage++;

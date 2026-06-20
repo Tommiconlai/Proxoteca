@@ -14,7 +14,7 @@ function loadImage(src) {
 }
 
 // ── Linee di taglio su canvas ────────────────────────────────
-function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale, limits) {
+function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale, limits, style = 'lines') {
     const gap = 0.5 * scale;
     const len = 3 * scale;
 
@@ -30,6 +30,18 @@ function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale
         ctx.lineTo(x2, y2);
         ctx.stroke();
     };
+
+    if (style === 'corners') {
+        // Squadrette ad angolo (vedi drawCropMarks PDF): vertice in fuori di g, bracci len verso la carta.
+        const g = bleedPx > 0 ? Math.min(0.6 * scale, bleedPx) : 0.6 * scale;
+        const len2 = Math.min(len, cardWpx * 0.45, cardHpx * 0.45);
+        const bracket = (vx, vy, sx, sy) => { seg(vx, vy, vx + sx * len2, vy); seg(vx, vy, vx, vy + sy * len2); };
+        bracket(cx - g, cy - g, 1, 1);
+        bracket(cx + cardWpx + g, cy - g, -1, 1);
+        bracket(cx - g, cy + cardHpx + g, 1, -1);
+        bracket(cx + cardWpx + g, cy + cardHpx + g, -1, -1);
+        return;
+    }
 
     const L = cropMarkSpan(limits.left, gap, len);
     const R = cropMarkSpan(limits.right, gap, len);
@@ -57,12 +69,12 @@ function drawCropMarksCanvas(ctx, cellX, cellY, bleedPx, cardWpx, cardHpx, scale
 }
 
 // ── Singola pagina canvas ─────────────────────────────────────
-export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, previewW, empty }) {
+export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, previewW, empty }) {
     const canvasRef = useRef();
     // Cache src(objectURL) -> HTMLImageElement decodificata: evita di ri-decodificare
     // le immagini a ogni ridisegno (cancellazione carta, resize, cambio pagina/formato).
     const cacheRef = useRef(new Map());
-    const info = useMemo(() => getGridInfo(formatKey, bleedMm, cardW, cardH), [formatKey, bleedMm, cardW, cardH]);
+    const info = useMemo(() => getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet), [formatKey, bleedMm, cardW, cardH, customSheet]);
     const scale = previewW / info.pageW;
     const previewH = Math.round(info.pageH * scale);
 
@@ -157,7 +169,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
                     up:    (row === 0 ? offsetY * scale : 0) + bleedPx,
                     down:  (row === rows - 1 ? offsetY * scale : 0) + bleedPx,
                 };
-                if (showCrop) drawCropMarksCanvas(ctx, x, y, bleedPx, cardWpx, cardHpx, scale, limits);
+                if (showCrop) drawCropMarksCanvas(ctx, x, y, bleedPx, cardWpx, cardHpx, scale, limits, cropStyle);
             }
 
             ctx.strokeStyle = '#c8c8c8';
@@ -167,7 +179,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
 
         draw();
         return () => { cancelled = true; };
-    }, [pageImages, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, previewW, empty, info, scale, previewH]);
+    }, [pageImages, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, previewW, empty, info, scale, previewH]);
 
     return (
         <canvas
@@ -178,14 +190,14 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
 }
 
 // ── Componente principale ─────────────────────────────────────
-export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, onRemove, onChangeArt, onToggleBleed, onDuplicate, onAddPhotos, onImportScryfall, isDragActive, missing }) {
+export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, onAddPhotos, onImportScryfall, isDragActive, missing }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
     const [menuOpen, setMenuOpen] = useState(false);
     const stageRef = useRef(null);
     const menuRef = useRef(null);
 
-    const info = useMemo(() => getGridInfo(formatKey, bleedMm, cardW, cardH), [formatKey, bleedMm, cardW, cardH]);
+    const info = useMemo(() => getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet), [formatKey, bleedMm, cardW, cardH, customSheet]);
     const perPage = Math.max(1, info.perPage);
     const totalPages = images.length === 0 ? 1 : Math.ceil(images.length / perPage);
 
@@ -259,6 +271,8 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                         cardW={cardW}
                         cardH={cardH}
                         showCrop={showCrop}
+                        cropStyle={cropStyle}
+                        customSheet={customSheet}
                         previewW={pageW}
                         empty={images.length === 0}
                     />

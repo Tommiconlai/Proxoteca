@@ -20,7 +20,7 @@ export default function App() {
   const [images, setImages] = useState([]);
   const [formatKey, setFormatKey] = useState(() => {
     const s = localStorage.getItem('ip:format');
-    return s && PAPER_FORMATS[s] ? s : 'A3';
+    return s && (PAPER_FORMATS[s] || s === 'custom') ? s : 'A3';
   });
   const [bleedMm, setBleedMm] = useState(() => readNum('ip:bleed', 2));
   const [bleedStyle, setBleedStyle] = useState(() => localStorage.getItem('ip:bleedStyle') || 'auto'); // auto | mirror | stretch | black
@@ -29,11 +29,19 @@ export default function App() {
   const [cardW, setCardW] = useState(() => readNum('ip:cardW', 63) || 63);
   const [cardH, setCardH] = useState(() => readNum('ip:cardH', 88) || 88);
   const [cropMarks, setCropMarks] = useState(() => localStorage.getItem('ip:cropMarks') !== '0'); // default on
+  const [cropStyle, setCropStyle] = useState(() => localStorage.getItem('ip:cropStyle') || 'lines'); // lines | corners
+  const [sheetUnit, setSheetUnit] = useState(() => (localStorage.getItem('ip:sheetUnit') === 'in' ? 'in' : 'mm'));
+  const [sheetW, setSheetW] = useState(() => readNum('ip:sheetW', 210) || 210);
+  const [sheetH, setSheetH] = useState(() => readNum('ip:sheetH', 297) || 297);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [editingId, setEditingId] = useState(null); // carta di cui cambiare l'art
-  const { perPage } = getGridInfo(formatKey, bleedMm, cardW, cardH);
+  // Foglio personalizzato in mm (sheetW/H sono nell'unità scelta: mm o inch).
+  const customSheet = formatKey === 'custom'
+    ? (sheetUnit === 'in' ? [sheetW * 25.4, sheetH * 25.4] : [sheetW, sheetH])
+    : null;
+  const { perPage } = getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet);
   const editing = editingId ? images.find(i => i.id === editingId) : null;
 
   // Persiste i settaggi (non le immagini: sono blob, si re-importano in 1 click).
@@ -46,7 +54,11 @@ export default function App() {
     localStorage.setItem('ip:cardW', String(cardW));
     localStorage.setItem('ip:cardH', String(cardH));
     localStorage.setItem('ip:cropMarks', cropMarks ? '1' : '0');
-  }, [formatKey, bleedMm, bleedStyle, dpi, cardType, cardW, cardH, cropMarks]);
+    localStorage.setItem('ip:cropStyle', cropStyle);
+    localStorage.setItem('ip:sheetUnit', sheetUnit);
+    localStorage.setItem('ip:sheetW', String(sheetW));
+    localStorage.setItem('ip:sheetH', String(sheetH));
+  }, [formatKey, bleedMm, bleedStyle, dpi, cardType, cardW, cardH, cropMarks, cropStyle, sheetUnit, sheetW, sheetH]);
 
   // Revoca gli object URL residui allo smontaggio (evita leak di memoria).
   // imagesRef tiene il riferimento aggiornato senza ri-registrare l'effect.
@@ -115,7 +127,7 @@ export default function App() {
     setError(null);
     setLoading(true);
     try {
-      await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks);
+      await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet);
     } catch (err) {
       setError(err.message || 'Errore durante la generazione del PDF.');
     } finally {
@@ -164,6 +176,15 @@ export default function App() {
             setCardH={setCardH}
             cropMarks={cropMarks}
             setCropMarks={setCropMarks}
+            cropStyle={cropStyle}
+            setCropStyle={setCropStyle}
+            sheetUnit={sheetUnit}
+            setSheetUnit={setSheetUnit}
+            sheetW={sheetW}
+            setSheetW={setSheetW}
+            sheetH={sheetH}
+            setSheetH={setSheetH}
+            customSheet={customSheet}
           />
           <div className="sidebar-section">
             <h2>Esporta</h2>
@@ -203,6 +224,8 @@ export default function App() {
             cardW={cardW}
             cardH={cardH}
             showCrop={cropMarks}
+            cropStyle={cropStyle}
+            customSheet={customSheet}
             onRemove={handleRemove}
             onChangeArt={setEditingId}
             onToggleBleed={handleToggleBleed}

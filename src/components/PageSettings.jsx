@@ -19,10 +19,14 @@ const CARD_TYPES = [
 
 export default function PageSettings({
     formatKey, setFormatKey, bleedMm, setBleedMm, bleedStyle, setBleedStyle, dpi, setDpi,
-    cardType, setCardType, cardW, setCardW, cardH, setCardH, cropMarks, setCropMarks,
+    cardType, setCardType, cardW, setCardW, cardH, setCardH,
+    cropMarks, setCropMarks, cropStyle, setCropStyle,
+    sheetUnit, setSheetUnit, sheetW, setSheetW, sheetH, setSheetH, customSheet,
 }) {
-    const { cols, rows, perPage } = getGridInfo(formatKey, bleedMm, cardW, cardH);
-    const [pw, ph] = PAPER_FORMATS[formatKey];
+    const { cols, rows, perPage } = getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet);
+    const [pw, ph] = formatKey === 'custom' && customSheet
+        ? customSheet.map((v) => Math.round(v * 10) / 10)
+        : PAPER_FORMATS[formatKey];
     const totalWmm = (cardW + bleedMm * 2).toFixed(1);
     const totalHmm = (cardH + bleedMm * 2).toFixed(1);
 
@@ -32,11 +36,20 @@ export default function PageSettings({
         if (t && key !== 'custom') { setCardW(t.w); setCardH(t.h); }
     };
 
+    // Cambio unità foglio: converte i valori mostrati (mm↔inch) mantenendo la misura.
+    const onUnitChange = (u) => {
+        if (u === sheetUnit) return;
+        const conv = (v) => (u === 'in' ? Math.round((v / 25.4) * 100) / 100 : Math.round(v * 25.4 * 10) / 10);
+        setSheetW(conv(sheetW));
+        setSheetH(conv(sheetH));
+        setSheetUnit(u);
+    };
+
     return (
         <>
             {/* Formato carta */}
             <div className="sidebar-section">
-                <h2>Formato carta</h2>
+                <h2>Formato foglio</h2>
                 <div className="glass-card compact">
                     <div className="select-wrapper">
                         <select value={formatKey} onChange={e => setFormatKey(e.target.value)}>
@@ -44,8 +57,29 @@ export default function PageSettings({
                                 const [w, h] = PAPER_FORMATS[k];
                                 return <option key={k} value={k}>{k} — {w}×{h} mm</option>;
                             })}
+                            <option value="custom">Personalizzato…</option>
                         </select>
                     </div>
+                    {formatKey === 'custom' && (
+                        <>
+                            <div className="unit-toggle">
+                                <button type="button" className={sheetUnit === 'mm' ? 'active' : ''} onClick={() => onUnitChange('mm')}>mm</button>
+                                <button type="button" className={sheetUnit === 'in' ? 'active' : ''} onClick={() => onUnitChange('in')}>inch</button>
+                            </div>
+                            <div className="card-size-custom">
+                                <label>L
+                                    <input type="number" min="1" step={sheetUnit === 'in' ? '0.1' : '1'}
+                                        value={sheetW} onChange={e => setSheetW(Number(e.target.value))} />
+                                    {sheetUnit}
+                                </label>
+                                <label>A
+                                    <input type="number" min="1" step={sheetUnit === 'in' ? '0.1' : '1'}
+                                        value={sheetH} onChange={e => setSheetH(Number(e.target.value))} />
+                                    {sheetUnit}
+                                </label>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -123,12 +157,18 @@ export default function PageSettings({
             <div className="sidebar-section">
                 <h2>Crocini di taglio</h2>
                 <div className="glass-card compact">
-                    <div className="select-wrapper">
-                        <select value={cropMarks ? '1' : '0'} onChange={e => setCropMarks(e.target.value === '1')}>
-                            <option value="1">Mostra</option>
-                            <option value="0">Nascondi</option>
-                        </select>
-                    </div>
+                    <label className="checkbox-row">
+                        <input type="checkbox" checked={cropMarks} onChange={e => setCropMarks(e.target.checked)} />
+                        <span>Mostra crocini</span>
+                    </label>
+                    {cropMarks && (
+                        <div className="select-wrapper" style={{ marginTop: 10 }}>
+                            <select value={cropStyle} onChange={e => setCropStyle(e.target.value)}>
+                                <option value="lines">Linee</option>
+                                <option value="corners">Squadrette ad angolo</option>
+                            </select>
+                        </div>
+                    )}
                 </div>
             </div>
 

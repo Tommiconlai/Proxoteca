@@ -36,12 +36,12 @@ before restarting.
 
 | File | Role |
 |------|------|
-| `src/App.jsx` | Root: state (images, format, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks, import + art-picker modals), header/sidebar/main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`). Handlers: add / remove / clearAll / toggleBleed (none↔stretch) / duplicate / replaceArt |
-| `src/components/PageSettings.jsx` | Sidebar: format / **card type** (presets + custom W×H) / bleed / **bleed-style** (auto/mirror/stretch/black) / dpi / **crop-marks** (show-hide) selects + layout info box (Foglio / Carta / Cella / griglia / immagini per pagina) |
+| `src/App.jsx` | Root: state (images, format incl. `custom`, sheetUnit/sheetW/sheetH, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks/cropStyle, import + art-picker modals), derives `customSheet` (mm) for custom sheets, header/sidebar/main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`/`ip:cropStyle`/`ip:sheetUnit`/`ip:sheetW`/`ip:sheetH`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`). Handlers: add / remove / clearAll / toggleBleed (none↔stretch) / duplicate / replaceArt |
+| `src/components/PageSettings.jsx` | Sidebar: format (presets + **custom sheet** W×H with mm/inch toggle) / **card type** (presets + custom W×H) / bleed / **bleed-style** (auto/mirror/stretch/black) / dpi / **crop marks** (show checkbox + style: Linee / Squadrette) + layout info box (Foglio / Carta / Cella / griglia / immagini per pagina) |
 | `src/components/PagePreview.jsx` | Preview: one large centered page (`PageCanvas`) + per-card hover overlay (click = change art; buttons: duplicate, bleed on/off, delete). `PageCanvas` draws cards + bleed + crop marks + a **low-res warning** triangle (source < ½ the px the chosen DPI needs). Footer: pager + count + green "+" menu (carica file / importa Scryfall) |
 | `src/components/ScryfallImportModal.jsx` | Modal: paste a card list → fetch from Scryfall → add to images. Pasted text persisted to `localStorage` (`ip:cardlist`). Accepts `(SET) collector` to pin a printing |
 | `src/components/ArtPickerModal.jsx` | Click a placed card → lists all Scryfall printings (`fetchPrints`, `/cards/search?unique=prints`) → pick one → `downloadAsFile` swaps `file`+`preview` (id/bleedMode kept). Card name is derived from the **filename** (DFC / special chars → no prints) |
-| `src/utils/pdfGenerator.js` | Grid math (`getGridInfo(formatKey, bleedMm, cardW=63, cardH=88)`, `CARD_W`/`CARD_H` are defaults) + `generatePDF(items, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks)` (jspdf, dynamically imported) + `drawCardWithBleed` (stretch/mirror/black bleed) + `resolveBleedMode` (per-card mode × global style) + `cropMarkSpan` (clamped crop marks) |
+| `src/utils/pdfGenerator.js` | Grid math (`getGridInfo(formatKey, bleedMm, cardW=63, cardH=88, customSheet=null)`; `formatKey==='custom'` uses `customSheet` mm dims, else `PAPER_FORMATS`) + `generatePDF(items, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet)` (jspdf, dynamically imported) + `drawCardWithBleed` (stretch/mirror/black bleed) + `resolveBleedMode` (per-card mode × global style) + `drawCropMarks(…, style)` (`lines`/`corners`) + `cropMarkSpan` (clamped crop marks) |
 | `src/utils/scryfall.js` | `parseCardList` (text → `{qty,name,set,collector}`) + `fetchScryfallImages` (`/cards/collection` batched, printing-pinned via name\|set\|collector keys, downloads PNGs as `File`; DFC → both faces) + `fetchPrints` + `downloadAsFile` |
 | `src/utils/scryfall.selfcheck.js` | `node`-runnable assert check for `parseCardList` (no framework). Run: `node src/utils/scryfall.selfcheck.js` |
 | `src/components/icons.jsx` | Custom lucide-style SVG icon set (currentColor), incl. `IconPlus`, `IconDownload`, `IconCopy`, `IconFrame` |
@@ -70,7 +70,18 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Card type + crop-mark toggle (most recent):**
+- **Crop-mark style + checkbox + custom sheet (most recent):**
+  - *Crop-mark styles:* `cropStyle` = `'lines'` (the original edge-aligned marks, clamped by
+    `cropMarkSpan`) | `'corners'` (squadrette — L-brackets offset into the gutter at each trim
+    corner, opening toward the card). `drawCropMarks` (PDF) + `drawCropMarksCanvas` (preview)
+    both take a `style` arg.
+  - *Show-crop is now a checkbox* (`.checkbox-row`, `accent-color` gold) instead of a select;
+    the style select shows only when checked.
+  - *Custom sheet:* "Personalizzato" option in the format select reveals W×H inputs + an
+    **mm / inch** toggle (`.unit-toggle`). `sheetW`/`sheetH` are stored in the chosen unit;
+    `App` derives `customSheet` in mm and threads it through `getGridInfo(…, customSheet)` and
+    `generatePDF(…, customSheet)`. Toggling units converts the shown values. Persisted. Verified live.
+- **Card type + crop-mark toggle:**
   - *Tipo carta:* sidebar preset select (Standard 63×88, Piccola/JP 59×86, Mini USA 41×63,
     Tarot 70×120) + "Personalizzata" with free W×H inputs. `CARD_W`/`CARD_H` are now just
     defaults — `getGridInfo(formatKey, bleedMm, cardW, cardH)` and `generatePDF(…, cardW, cardH, …)`

@@ -276,6 +276,54 @@ input[type="number"]:focus {
   cursor: text;
 }
 
+/* Toggle unità foglio (mm / inch) */
+.unit-toggle {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.unit-toggle button {
+  flex: 1;
+  padding: 6px;
+  font-size: 0.78rem;
+  font-family: var(--font);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.unit-toggle button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1f1606;
+  font-weight: 600;
+}
+
+/* Checkbox riga (Mostra crocini) */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 /* ============================================================
    SLIDER
    ============================================================ */
