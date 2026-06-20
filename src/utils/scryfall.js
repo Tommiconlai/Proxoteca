@@ -54,6 +54,9 @@ export function parseCardList(text) {
       name = name.slice(0, tail.index);
     }
     name = name.trim();
+    // DFC / split: Scryfall /cards/collection matcha la faccia anteriore ("A"),
+    // non il nome pieno "A // B". imageFaces estrae poi entrambe le facce.
+    if (name.includes('//')) name = name.split('//')[0].trim();
     if (name) out.push({ qty, name, set, collector });
   }
   return out;

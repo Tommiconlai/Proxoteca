@@ -70,7 +70,12 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Import deck list from a link (most recent):** the Scryfall modal got a URL field +
+- **DFC name fix (most recent):** deck lists give double-faced cards as `Front // Back`, but
+  Scryfall `/cards/collection` only matches the **front** face name (the full `A // B` returns
+  not-found). `parseCardList` now keeps the part before `//`; `imageFaces` still emits both
+  faces. Fixes the "non trovate" on transform/MDFC cards (also safe for split cards, whose
+  front name matches too). Verified live (Birgi, Ral → 4 faces, 0 missing).
+- **Import deck list from a link:** the Scryfall modal got a URL field +
   "Carica". `fetchDeckList(url)` (in `utils/scryfall.js`) detects the site, fetches the
   decklist, and fills the textarea as `qty Name` lines → the existing parse/import pipeline
   takes over. Sites: **Moxfield / Archidekt / Tappedout**. These send no CORS headers and the
