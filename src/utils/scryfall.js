@@ -219,3 +219,56 @@ export async function fetchScryfallImages(entries, onProgress) {
 
   return { files, notFound };
 }
+
+// ── Import lista da link deck (Moxfield / Archidekt / Tappedout) ───────────
+// Questi siti non mandano header CORS e l'app è statica (niente backend) → uso
+// un proxy CORS pubblico. ponytail: corsproxy.io gratis; se muore o limita,
+// cambiare solo questa costante (o aggiungere un backend).
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+const px = (u) => CORS_PROXY + encodeURIComponent(u);
+
+async function archidektList(id) {
+  const r = await fetch(px(`https://archidekt.com/api/decks/${id}/`));
+  if (!r.ok) throw new Error(`Archidekt ha risposto ${r.status}`);
+  const j = await r.json();
+  return (j.cards || [])
+    .filter((c) => !(c.categories || []).some((cat) => /maybe|sideboard|considering/i.test(cat)))
+    .map((c) => `${c.quantity || 1} ${c.card?.oracleCard?.name || ''}`.trim())
+    .filter((l) => l.length > 1)
+    .join('\n');
+}
+
+async function moxfieldList(pubId) {
+  const r = await fetch(px(`https://api2.moxfield.com/v3/decks/all/${pubId}`));
+  if (!r.ok) throw new Error(`Moxfield ha risposto ${r.status}`);
+  const j = await r.json();
+  const out = [];
+  const boards = j.boards || {};
+  for (const name of ['commanders', 'mainboard']) {
+    const cards = boards[name]?.cards || {};
+    for (const k in cards) out.push(`${cards[k].quantity || 1} ${cards[k].card?.name || ''}`.trim());
+  }
+  return out.filter((l) => l.length > 1).join('\n');
+}
+
+async function tappedoutList(slug) {
+  const r = await fetch(px(`https://tappedout.net/mtg-decks/${slug}/?fmt=txt`));
+  if (!r.ok) throw new Error(`Tappedout ha risposto ${r.status}`);
+  const txt = await r.text();
+  // fmt=txt è già "1 Nome" per riga; tieni solo le righe che iniziano con la quantità.
+  return txt.replace(/\r/g, '').split('\n').filter((l) => /^\d+\s/.test(l.trim())).join('\n');
+}
+
+/**
+ * Risolve un link deck in una lista testuale "qty Nome" (poi → parseCardList).
+ * @param {string} url link Moxfield / Archidekt / Tappedout
+ * @returns {Promise<string>}
+ */
+export async function fetchDeckList(url) {
+  const u = (url || '').trim();
+  let m;
+  if ((m = u.match(/moxfield\.com\/decks\/([\w-]+)/i))) return moxfieldList(m[1]);
+  if ((m = u.match(/archidekt\.com\/(?:api\/)?decks\/(\d+)/i))) return archidektList(m[1]);
+  if ((m = u.match(/tappedout\.net\/mtg-decks\/([\w-]+)/i))) return tappedoutList(m[1]);
+  throw new Error('Link non riconosciuto. Supportati: Moxfield, Archidekt, Tappedout.');
+}

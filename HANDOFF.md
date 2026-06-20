@@ -39,10 +39,10 @@ before restarting.
 | `src/App.jsx` | Root: state (images, format incl. `custom`, sheetUnit/sheetW/sheetH, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks/cropStyle, import + art-picker modals), derives `customSheet` (mm) for custom sheets, header/sidebar/main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`/`ip:cropStyle`/`ip:sheetUnit`/`ip:sheetW`/`ip:sheetH`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`). Handlers: add / remove / clearAll / toggleBleed (none↔stretch) / duplicate / replaceArt. Sidebar = scrolling `.sidebar-scroll` (PageSettings) + fixed `.sidebar-export` footer (Genera PDF / Elimina tutte) |
 | `src/components/PageSettings.jsx` | Sidebar settings in **2 group cards**: "Foglio & carta" (format presets + custom sheet W×H with mm/inch toggle · card type presets + custom W×H · bleed) and "Stampa" (bleed-style auto/mirror/stretch/black · dpi · crop marks: show checkbox + style Linee/Squadrette) + "Riepilogo" info box. `SelectField` helper = label + `aria-label`ed select |
 | `src/components/PagePreview.jsx` | Preview: one large centered page (`PageCanvas`) + per-card hover overlay (click = change art; buttons: duplicate, bleed on/off, delete). `PageCanvas` draws cards + bleed + crop marks + a **low-res warning** triangle (source < ½ the px the chosen DPI needs). Footer: pager + count + green "+" menu (carica file / importa Scryfall) |
-| `src/components/ScryfallImportModal.jsx` | Modal: paste a card list → fetch from Scryfall → add to images. Pasted text persisted to `localStorage` (`ip:cardlist`). Accepts `(SET) collector` to pin a printing |
+| `src/components/ScryfallImportModal.jsx` | Modal: paste a card list **or a deck link** (URL field + "Carica" → `fetchDeckList` fills the textarea) → fetch from Scryfall → add to images. Pasted text persisted to `localStorage` (`ip:cardlist`). Accepts `(SET) collector` to pin a printing |
 | `src/components/ArtPickerModal.jsx` | Click a placed card → lists all Scryfall printings (`fetchPrints`, `/cards/search?unique=prints`) → pick one → `downloadAsFile` swaps `file`+`preview` (id/bleedMode kept). Card name is derived from the **filename** (DFC / special chars → no prints) |
 | `src/utils/pdfGenerator.js` | Grid math (`getGridInfo(formatKey, bleedMm, cardW=63, cardH=88, customSheet=null)`; `formatKey==='custom'` uses `customSheet` mm dims, else `PAPER_FORMATS`) + `generatePDF(items, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet)` (jspdf, dynamically imported) + `drawCardWithBleed` (stretch/mirror/black bleed) + `resolveBleedMode` (per-card mode × global style) + `drawCropMarks(…, style)` (`lines`/`corners`) + `cropMarkSpan` (clamped crop marks) |
-| `src/utils/scryfall.js` | `parseCardList` (text → `{qty,name,set,collector}`) + `fetchScryfallImages` (`/cards/collection` batched, printing-pinned via name\|set\|collector keys, downloads PNGs as `File`; DFC → both faces) + `fetchPrints` + `downloadAsFile` |
+| `src/utils/scryfall.js` | `parseCardList` (text → `{qty,name,set,collector}`) + `fetchScryfallImages` (`/cards/collection` batched, printing-pinned via name\|set\|collector keys, downloads PNGs as `File`; DFC → both faces) + `fetchPrints` + `downloadAsFile` + `fetchDeckList` (deck link → text, via `corsproxy.io`) |
 | `src/utils/scryfall.selfcheck.js` | `node`-runnable assert check for `parseCardList` (no framework). Run: `node src/utils/scryfall.selfcheck.js` |
 | `src/components/icons.jsx` | Custom lucide-style SVG icon set (currentColor), incl. `IconPlus`, `IconDownload`, `IconCopy`, `IconFrame` |
 | `src/index.css` | All styling + design tokens |
@@ -70,7 +70,15 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Animated "Mostra crocini" checkbox (most recent):** native input hidden-but-focusable +
+- **Import deck list from a link (most recent):** the Scryfall modal got a URL field +
+  "Carica". `fetchDeckList(url)` (in `utils/scryfall.js`) detects the site, fetches the
+  decklist, and fills the textarea as `qty Name` lines → the existing parse/import pipeline
+  takes over. Sites: **Moxfield / Archidekt / Tappedout**. These send no CORS headers and the
+  app is static, so requests go through a **public CORS proxy** (`corsproxy.io`); only the
+  proxy URL constant needs changing if it dies. Archidekt verified live end-to-end; Moxfield /
+  Tappedout use their documented API shapes (proxy forwarding confirmed, not tested with a real
+  deck). Manabox was left out — its API is CORS-OK but the web URL/JSON shape couldn't be verified.
+- **Animated "Mostra crocini" checkbox:** native input hidden-but-focusable +
   an SVG (`.anim-check`) that morphs a circle into a checkmark on `:checked` (adapted Uiverse
   snippet — green swapped for the gold `--accent`, light ripple/base for the dark theme).
 - **Sidebar redesign (from a design critique):**
@@ -172,6 +180,10 @@ All verified live + `npm run lint` clean + `npm run build` green.
 
 ## Known issues / TODO
 
+- **Deck-link import depends on `corsproxy.io`** (a free public CORS proxy) for Moxfield /
+  Archidekt / Tappedout. If it rate-limits or dies, swap `CORS_PROXY` in `utils/scryfall.js`
+  or add a tiny backend. Moxfield / Tappedout parsers use documented API shapes but weren't
+  tested with a real deck — fix the field path if an import comes back empty.
 - **`public/vite.svg`** is dead (favicon switched to `favicon.svg`). Safe to delete.
 - **A11y:** sidebar `<select>`s now carry `aria-label`s (field text is a decorative `<span>`);
   custom W/H inputs are wrapped in `<label>`. Remaining gap: no full keyboard/focus-visible audit.

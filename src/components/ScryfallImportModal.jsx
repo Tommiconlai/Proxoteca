@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { parseCardList, fetchScryfallImages } from '../utils/scryfall';
+import { parseCardList, fetchScryfallImages, fetchDeckList } from '../utils/scryfall';
 import { IconX } from './icons';
 
 export default function ScryfallImportModal({ open, onClose, onImport }) {
     const [text, setText] = useState(() => localStorage.getItem('ip:cardlist') || ''); // sopravvive al reload
+    const [link, setLink] = useState('');
+    const [loadingLink, setLoadingLink] = useState(false);
     const [busy, setBusy] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [result, setResult] = useState(null); // { imported, notFound }
@@ -11,7 +13,24 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
 
     if (!open) return null;
 
-    const close = () => { if (!busy) onClose(); };
+    const close = () => { if (!busy && !loadingLink) onClose(); };
+
+    // Carica una lista da un link deck nella textarea (poi import normale).
+    const handleLoadLink = async () => {
+        const u = link.trim();
+        if (!u) return;
+        setError(null); setResult(null); setLoadingLink(true);
+        try {
+            const list = await fetchDeckList(u);
+            if (!list) { setError('Nessuna carta trovata nel deck (formato del sito cambiato?).'); return; }
+            setText(list);
+            localStorage.setItem('ip:cardlist', list);
+        } catch (e) {
+            setError(e.message || 'Errore nel caricare il deck.');
+        } finally {
+            setLoadingLink(false);
+        }
+    };
 
     const handleImport = async () => {
         const entries = parseCardList(text);
@@ -45,9 +64,30 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
                 </div>
 
                 <p className="modal-hint">
-                    Una carta per riga, formato <code>1x Nome Carta</code>. Aggiungi <code>(SET) num</code> per
-                    scegliere la stampa (es. <code>1x Sol Ring (C21) 263</code>). Le doppia-faccia importano fronte e retro.
+                    Incolla un link deck oppure la lista a mano. Una carta per riga, formato
+                    {' '}<code>1x Nome Carta</code>; aggiungi <code>(SET) num</code> per scegliere la stampa.
+                    Le doppia-faccia importano fronte e retro.
                 </p>
+
+                <div className="import-link-row">
+                    <input
+                        type="url"
+                        className="import-link-input"
+                        value={link}
+                        onChange={(e) => setLink(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleLoadLink(); }}
+                        placeholder="Link deck (Moxfield, Archidekt, Tappedout)"
+                        disabled={busy || loadingLink}
+                        spellCheck={false}
+                    />
+                    <button
+                        className="btn-secondary"
+                        onClick={handleLoadLink}
+                        disabled={busy || loadingLink || !link.trim()}
+                    >
+                        {loadingLink ? <><span className="spinner" /> Carico…</> : 'Carica'}
+                    </button>
+                </div>
 
                 <textarea
                     className="import-textarea"
@@ -55,7 +95,7 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
                     onChange={(e) => { setText(e.target.value); localStorage.setItem('ip:cardlist', e.target.value); if (result) setResult(null); }}
                     placeholder={'1x Sol Ring\n2x Brainstorm\n1x Fable of the Mirror-Breaker'}
                     rows={10}
-                    disabled={busy}
+                    disabled={busy || loadingLink}
                     spellCheck={false}
                 />
 
@@ -83,12 +123,12 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
 
                 <div className="modal-actions">
                     {!result && (
-                        <button className="btn-secondary" onClick={close} disabled={busy}>Chiudi</button>
+                        <button className="btn-secondary" onClick={close} disabled={busy || loadingLink}>Chiudi</button>
                     )}
                     <button
                         className="btn-generate import-btn"
                         onClick={busy ? undefined : (result ? onClose : handleImport)}
-                        disabled={busy || (!result && !text.trim())}
+                        disabled={busy || loadingLink || (!result && !text.trim())}
                     >
                         {busy ? <><span className="spinner" /> Import…</> : result ? 'Finito' : 'Importa'}
                     </button>
