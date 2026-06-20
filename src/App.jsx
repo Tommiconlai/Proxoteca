@@ -159,6 +159,7 @@ export default function App() {
 
         {/* Sidebar */}
         <aside className="sidebar">
+          <div className="sidebar-scroll">
           <PageSettings
             formatKey={formatKey}
             setFormatKey={setFormatKey}
@@ -186,8 +187,8 @@ export default function App() {
             setSheetH={setSheetH}
             customSheet={customSheet}
           />
-          <div className="sidebar-section">
-            <h2>Esporta</h2>
+          </div>
+          <div className="sidebar-section sidebar-export">
             <button
               className="btn-generate"
               onClick={handleGenerate}

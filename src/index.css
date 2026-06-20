@@ -88,8 +88,8 @@ h3 {
 .app {
   display: grid;
   grid-template-rows: auto 1fr;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh; /* altezza fissa: la sidebar scrolla internamente, l'export resta sticky */
 }
 
 .app-header {
@@ -150,11 +150,20 @@ h3 {
 .sidebar {
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
-  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Area impostazioni scrollabile; l'export resta footer fisso sotto. */
+.sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  overflow-y: auto;
+  padding: 24px 20px;
 }
 
 .sidebar-section {
@@ -166,9 +175,32 @@ h3 {
 .sidebar-section h2 {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary); /* era --text-muted: <4.5:1 a 11px, falliva AA */
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+/* Controlli raggruppati in una card: label-sopra compatta, righe ravvicinate. */
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* Esporta: footer fisso fuori dall'area scroll — la CTA resta sempre visibile. */
+.sidebar-export {
+  flex: none;
+  padding: 16px 20px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
 }
 
 /* ============================================================

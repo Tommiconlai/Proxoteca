@@ -36,8 +36,8 @@ before restarting.
 
 | File | Role |
 |------|------|
-| `src/App.jsx` | Root: state (images, format incl. `custom`, sheetUnit/sheetW/sheetH, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks/cropStyle, import + art-picker modals), derives `customSheet` (mm) for custom sheets, header/sidebar/main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`/`ip:cropStyle`/`ip:sheetUnit`/`ip:sheetW`/`ip:sheetH`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`). Handlers: add / remove / clearAll / toggleBleed (none↔stretch) / duplicate / replaceArt |
-| `src/components/PageSettings.jsx` | Sidebar: format (presets + **custom sheet** W×H with mm/inch toggle) / **card type** (presets + custom W×H) / bleed / **bleed-style** (auto/mirror/stretch/black) / dpi / **crop marks** (show checkbox + style: Linee / Squadrette) + layout info box (Foglio / Carta / Cella / griglia / immagini per pagina) |
+| `src/App.jsx` | Root: state (images, format incl. `custom`, sheetUnit/sheetW/sheetH, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks/cropStyle, import + art-picker modals), derives `customSheet` (mm) for custom sheets, header/sidebar/main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`/`ip:cropStyle`/`ip:sheetUnit`/`ip:sheetW`/`ip:sheetH`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`). Handlers: add / remove / clearAll / toggleBleed (none↔stretch) / duplicate / replaceArt. Sidebar = scrolling `.sidebar-scroll` (PageSettings) + fixed `.sidebar-export` footer (Genera PDF / Elimina tutte) |
+| `src/components/PageSettings.jsx` | Sidebar settings in **2 group cards**: "Foglio & carta" (format presets + custom sheet W×H with mm/inch toggle · card type presets + custom W×H · bleed) and "Stampa" (bleed-style auto/mirror/stretch/black · dpi · crop marks: show checkbox + style Linee/Squadrette) + "Riepilogo" info box. `SelectField` helper = label + `aria-label`ed select |
 | `src/components/PagePreview.jsx` | Preview: one large centered page (`PageCanvas`) + per-card hover overlay (click = change art; buttons: duplicate, bleed on/off, delete). `PageCanvas` draws cards + bleed + crop marks + a **low-res warning** triangle (source < ½ the px the chosen DPI needs). Footer: pager + count + green "+" menu (carica file / importa Scryfall) |
 | `src/components/ScryfallImportModal.jsx` | Modal: paste a card list → fetch from Scryfall → add to images. Pasted text persisted to `localStorage` (`ip:cardlist`). Accepts `(SET) collector` to pin a printing |
 | `src/components/ArtPickerModal.jsx` | Click a placed card → lists all Scryfall printings (`fetchPrints`, `/cards/search?unique=prints`) → pick one → `downloadAsFile` swaps `file`+`preview` (id/bleedMode kept). Card name is derived from the **filename** (DFC / special chars → no prints) |
@@ -70,7 +70,20 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Crop-mark style + checkbox + custom sheet (most recent):**
+- **Sidebar redesign (most recent — from a design critique):**
+  - *Fixed export footer:* `.app` is now `height: 100dvh` (was `min-height`), so the sidebar
+    splits into a scrolling `.sidebar-scroll` (the settings) + a non-scrolling `.sidebar-export`
+    footer. **Genera PDF is always visible** — before it sat below the fold. (Sticky-bottom was
+    tried first but the trailing content peeked under it; a flex footer is clean.)
+  - *Grouped controls:* the 6 separate carded sections collapsed into **2 group cards**
+    ("Foglio & carta", "Stampa") of stacked `.field`s + a trimmed "Riepilogo" box — far less
+    scroll. `SelectField` helper renders label + select.
+  - *Contrast:* section `h2` lightened `--text-muted` → `--text-secondary` (was ~4.4:1 at 11px,
+    failed AA; now ~5.9:1).
+  - *A11y:* every `<select>` got an `aria-label` (no more reliance on the `<h2>` as the only name).
+  - Info box no longer duplicates DPI; renamed "Layout" → "Riepilogo". Verified live (default fits
+    without scroll; custom sheet scrolls with the footer pinned).
+- **Crop-mark style + checkbox + custom sheet:**
   - *Crop-mark styles:* `cropStyle` = `'lines'` (the original edge-aligned marks, clamped by
     `cropMarkSpan`) | `'corners'` (squadrette — L-brackets offset into the gutter at each trim
     corner, opening toward the card). `drawCropMarks` (PDF) + `drawCropMarksCanvas` (preview)
@@ -157,8 +170,8 @@ All verified live + `npm run lint` clean + `npm run build` green.
 ## Known issues / TODO
 
 - **`public/vite.svg`** is dead (favicon switched to `favicon.svg`). Safe to delete.
-- **A11y:** sidebar `<select>`s are labeled by `<h2>` section titles, not `<label for>` /
-  `aria-label`. Functional but could be improved.
+- **A11y:** sidebar `<select>`s now carry `aria-label`s (field text is a decorative `<span>`);
+  custom W/H inputs are wrapped in `<label>`. Remaining gap: no full keyboard/focus-visible audit.
 - **Touch:** the per-card hover buttons (change-art / duplicate / bleed / delete) reveal on
   hover, so they're not reachable on touch devices (no tap-to-reveal). Fine for the desktop
   print workflow; revisit if mobile matters.
