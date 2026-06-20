@@ -90,9 +90,13 @@ export async function fetchPrints(name) {
   if (res.status === 404) return []; // nessuna stampa
   if (!res.ok) throw new Error(`Scryfall ha risposto ${res.status}`);
   const json = await res.json();
+  // Per le DFC: scegli la faccia il cui nome combacia con quello cercato (fronte
+  // o retro), così cambiando l'art del retro non si prende l'immagine del fronte.
+  const target = name.trim().toLowerCase();
   return (json.data || [])
     .map((c) => {
-      const u = c.image_uris || c.card_faces?.[0]?.image_uris || {};
+      const face = c.card_faces?.find((f) => f.name?.toLowerCase() === target);
+      const u = face?.image_uris || c.image_uris || c.card_faces?.[0]?.image_uris || {};
       return { id: c.id, set: (c.set || '').toUpperCase(), setName: c.set_name || '', thumb: u.small || u.normal, png: u.png || u.large };
     })
     .filter((p) => p.thumb && p.png);
