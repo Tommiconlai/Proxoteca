@@ -6,6 +6,7 @@ import PagePreview from './components/PagePreview';
 import ScryfallImportModal from './components/ScryfallImportModal';
 import MpcImportModal from './components/MpcImportModal';
 import ArtPickerModal from './components/ArtPickerModal';
+import CookieBanner from './components/CookieBanner';
 import MobileLayout from './components/MobileLayout';
 import { useIsMobile } from './hooks/useIsMobile';
 import { generatePDF, getGridInfo, PAPER_FORMATS } from './utils/pdfGenerator';
@@ -233,6 +234,7 @@ export default function App() {
         <ScryfallImportModal open={importOpen} onClose={() => setImportOpen(false)} onImport={addItems} />
         <MpcImportModal open={mpcOpen} onClose={() => setMpcOpen(false)} onImport={addItems} />
         {editing && <ArtPickerModal key={editing.id} card={editing} onClose={() => setEditingId(null)} onPick={handleReplaceArt} />}
+        <CookieBanner />
       </>
     );
   }
@@ -343,6 +345,8 @@ export default function App() {
           onPick={handleReplaceArt}
         />
       )}
+
+      <CookieBanner />
     </div>
   );
 }

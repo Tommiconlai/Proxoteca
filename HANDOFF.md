@@ -50,6 +50,7 @@ before restarting.
 | `src/utils/mpcfill.js` | **XML import only — contacts no MPCFill server.** `parseMpcXml(text)` (DOMParser → `{cards:[{id,name,count}]}`, fronts then backs; comma-separated `<slots>` = copies; name from `<query>`) + `fetchMpcImages(cards,onProgress)` (downloads via **`lh3.googleusercontent.com/d/<id>=w2000`** — the only Drive endpoint that sends CORS headers, so the blob is readable/not tainted; `drive.google.com/uc` + `/thumbnail` 403 even through a proxy). Each card → `{file, bleedMode:'full'}`, one entry per copy (same `File` reused); no `name` so MPC art counts as custom in "Save list". (The live MPCFill art-search was removed — see "Done recently".) |
 | `src/components/ScryfallImportModal.jsx` | Modal: paste a card list **or a deck link** (URL field + "Carica" → `fetchDeckList` fills the textarea) → fetch from Scryfall → add to images. Pasted text persisted to `localStorage` (`ip:cardlist`). Accepts `(SET) collector` to pin a printing |
 | `src/components/ArtPickerModal.jsx` | **Scryfall-only** art box. Click a placed card → `fetchPrints` lists every Scryfall printing → pick downloads the PNG to a `File` (`downloadAsFile`) and calls `onPick(file, {bleedMode, set, collector})` — `bleedMode` = `mirror` for full-art/borderless else `stretch` (mirrors the import path). Card name from the **filename**; remounted via `key={id}` |
+| `src/components/CookieBanner.jsx` | Cookie-consent banner (fixed bottom, centered, matches the modal surface/shadow). Self-contained: shows until the user chooses, persists `ip:cookieConsent` = `accepted`\|`declined` in localStorage. **Settings always live in localStorage (technical)**; this flag only gates any *future* analytics cookies (read the flag before loading them — none today). Rendered once in each App tree (desktop + mobile); on mobile it sits above the bottom-tab bar. Centered via `left:0;right:0;margin-inline:auto` (not `translateX`, which the `fade-up` animation would override) |
 | `src/hooks/useIsMobile.js` | `matchMedia('(max-width: 768px)')` via `useSyncExternalStore` → boolean. App renders the desktop tree above 768px, `MobileLayout` at/below |
 | `src/components/MobileLayout.jsx` | Mobile shell (≤768px): compact header (Logo + `?` tap-tooltip), three bottom tabs via `BottomTabBar` — **Cards** (`PageCanvas` preview + ＋ FAB → add bottom-sheet; `onCardTap` → `CardActionSheet`), **Settings** (reuses `PageSettings`), **Export** (count/missing + low-res warn + Generate/Save/Delete). Presentational only; consumes `settingsProps`/`previewProps`/`actions`/`addMenu` bundles from `App`. Local state: tab, addOpen, sel, helpOpen |
 | `src/components/BottomTabBar.jsx` | 3-tab nav (Cards/Settings/Export); reuses `IconLayout`/`IconFile` + an inline sliders icon |
@@ -84,7 +85,13 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Removed the live MPCFill art-search (most recent):** by request, Proxoteca no longer contacts
+- **Cookie consent banner (most recent):** `CookieBanner` (bottom, centered, site style) shown until
+  the user picks Accept/Decline; choice persisted in `localStorage` (`ip:cookieConsent`). Settings always
+  use localStorage (technical); the flag only gates *future* analytics cookies (none today — read the flag
+  before loading any). Rendered in both App trees; on mobile it clears the bottom-tab bar. Verified live
+  (desktop centered + mobile stacked; Accept dismisses + persists across reload). Gotcha noted: centered via
+  margins, not `translateX`, since the `fade-up` animation overrides `transform`.
+- **Removed the live MPCFill art-search:** by request, Proxoteca no longer contacts
   `mpcfill.com` at all. Deleted `searchMpcPrints` + the sources cache (`/2/editorSearch/`, `/2/cards/`,
   `/2/sources/`, the `[[pk,true]]` tuples) and the `corsproxy.io` usage from `utils/mpcfill.js`; deleted
   `ArtSourceModal` and its CSS (`.modal-source-tag`, the two source buttons). **Change-art is Scryfall-only
