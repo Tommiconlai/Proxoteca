@@ -1481,9 +1481,16 @@ body::before {
   .modal-overlay {
     padding: 0;
   }
-  /* Griglia art più compatta per tapping comodo */
+  /* Griglia art più compatta + riempie il modale full-screen (no spazio vuoto sotto).
+     Il modale è flex-column 100dvh: la parte scrollabile deve flex:1, non max-height:60vh. */
   .art-grid {
     grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+  .import-textarea {
+    flex: 1;
   }
   /* Help tooltip visibile quando il pulsante ? è stato tappato */
   .help.open .help-tooltip {
