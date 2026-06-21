@@ -170,9 +170,11 @@ export const nextBleedMode = (m) => (m === 'none' ? 'stretch' : m === 'full' ? '
 
 export function resolveBleedMode(itemMode, style) {
   const m = itemMode || 'none';
-  // 'full' = immagine già con abbondanza (MPCFill): riempie la cella, mai sovrascritto
-  // dallo stile globale (auto/mirror/stretch/black) che vale solo per carte trim.
+  // 'full' = immagine già con abbondanza: riempie la cella, niente generazione.
   if (m === 'full') return 'full';
+  // Stile globale "Bleed in art": forza TUTTE le carte a full (anche le 'none'),
+  // per testare set di carte custom già al vivo senza toccarle una a una.
+  if (style === 'full') return 'full';
   if (!style || style === 'auto') return m;
   if (m === 'none') return 'none';
   return style;

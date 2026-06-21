@@ -45,7 +45,7 @@ before restarting.
 | File | Role |
 |------|------|
 | `src/App.jsx` | Root: state (images, format incl. `custom`, sheetUnit/sheetW/sheetH, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks/cropStyle, import + art-picker modals), derives `customSheet` (mm) for custom sheets, header (logo + `?` **help tooltip** — pure-CSS `.help` hover/focus popover with the 4-step how-to, replaced the old tagline) / sidebar / main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`/`ip:cropStyle`/`ip:sheetUnit`/`ip:sheetW`/`ip:sheetH`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`/`full`). Handlers: add / remove / clearAll / toggleBleed (**per-card 3-state cycle** none→stretch→full→none via `nextBleedMode`) / duplicate / replaceArt (updates edition) / saveProject (Scryfall cards → `.txt`). Scryfall image items carry `{name,set,collector,primary}` for the save; manual uploads don't (→ excluded). Sidebar = scrolling `.sidebar-scroll` (PageSettings) + fixed `.sidebar-export` footer (flex column): **Add cards** (`.btn-add`, green, opens the upload/Scryfall `.add-menu`) → **Generate PDF** → row [**Save list** · **Delete all**]. Save/Delete are always rendered, `disabled` when `images.length === 0` (Save list hovers green, Delete hovers red). The `addMenuOpen` state + click-outside live here (moved out of the preview footer) |
-| `src/components/PageSettings.jsx` | Sidebar settings in **2 group cards**: "Foglio & carta" (format presets + custom sheet W×H with mm/inch toggle · card type presets + custom W×H · bleed · **"Uploads already include bleed"** checkbox → prop `preBled`/`setPreBled`, makes manual uploads import as `bleedMode:'full'`) and "Stampa" (bleed-style auto/mirror/stretch/black · dpi · crop marks: show checkbox + style Linee/Squadrette) + "Riepilogo" info box. Above the dpi field, a **low-res warning** (`.lowres-warn`, prop `lowResCount`) appears only when ≥1 placed card is below the chosen DPI — explains the red `!` preview marker. `SelectField` helper = label + `aria-label`ed select |
+| `src/components/PageSettings.jsx` | Sidebar settings in **2 group cards**: "Foglio & carta" (format presets + custom sheet W×H with mm/inch toggle · card type presets + custom W×H · bleed) and "Stampa" (bleed-style **auto/mirror/stretch/black/`full`="Bleed in art"** — `full` forces every card edge-to-edge for pre-bled art, with a `.field-hint` · dpi · crop marks: show checkbox + style Linee/Squadrette) + "Riepilogo" info box. Above the dpi field, a **low-res warning** (`.lowres-warn`, prop `lowResCount`) appears only when ≥1 placed card is below the chosen DPI — explains the red `!` preview marker. `SelectField` helper = label + `aria-label`ed select |
 | `src/components/PagePreview.jsx` | Preview: one large centered page (`PageCanvas`) + per-card hover overlay (click = change art; buttons: duplicate, bleed on/off, delete). `PageCanvas` draws cards + bleed + crop marks + a **low-res warning** triangle (source < ½ the px the chosen DPI needs). Footer: pager + count (the add "+" menu moved to the sidebar export footer) |
 | `src/components/MpcImportModal.jsx` | Modal: pick a **MPCFill `.xml`** order file → `parseMpcXml` lists cards → `fetchMpcImages` downloads each from Google Drive → `onImport` (= App `addItems`). File input is a hidden `<input>` inside a `.mpc-file` label. Shows count, progress, and failed-download names |
 | `src/utils/mpcfill.js` | **XML import only — contacts no MPCFill server.** `parseMpcXml(text)` (DOMParser → `{cards:[{id,name,count}]}`, fronts then backs; comma-separated `<slots>` = copies; name from `<query>`) + `fetchMpcImages(cards,onProgress)` (downloads via **`lh3.googleusercontent.com/d/<id>=w2000`** — the only Drive endpoint that sends CORS headers, so the blob is readable/not tainted; `drive.google.com/uc` + `/thumbnail` 403 even through a proxy). Each card → `{file, bleedMode:'full'}`, one entry per copy (same `File` reused); no `name` so MPC art counts as custom in "Save list". (The live MPCFill art-search was removed — see "Done recently".) |
@@ -86,16 +86,17 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **"Uploads already include bleed" option (most recent):** for custom (non-Scryfall) cards exported
-  with bleed already baked in. New checkbox in PageSettings "Foglio & carta" → `preBled` state in `App`
-  (persisted `ip:preBled`); when on, `handleImagesAdded` imports manual uploads with **`bleedMode:'full'`**
-  (the same full-cell, no-generation path MPC images use) instead of `'none'`. A hint reminds to set
-  **Bleed** to the baked amount (e.g. 2 mm) so crop marks land on the trim. Reuses the existing `'full'`
-  rendering. **Also changeable per-card after upload:** the per-card bleed control is now a 3-state cycle
-  (`nextBleedMode`: none → stretch → full → none) shown with a label (`bleedLabel`) on the desktop hover
-  button and the mobile action sheet (sheet stays open to cycle) — so any card can be set to/from "Bleed in
-  art" later. Replaced the old none↔stretch + `_wasFull` toggle. Verified live: global on → upload fills the
-  cell; global off → upload trim, then cycle reaches full; both persist; lint + build green.
+- **"Bleed in art" support for pre-bled custom cards (most recent):** for custom (non-Scryfall) cards
+  exported with bleed already baked in (e.g. 2 mm). Two ways:
+  - **Global** — a new **Bleed style → "Bleed in art"** option (`full`). `resolveBleedMode` returns `full`
+    when `style === 'full'`, forcing **every** card edge-to-edge (overrides even `none`); a `.field-hint`
+    reminds to set Bleed to the baked amount so crop marks land on the trim.
+  - **Per-card** — the per-card bleed control is a 3-state cycle (`nextBleedMode`: none → stretch → full →
+    none) with a `bleedLabel` on the desktop hover button and mobile action sheet (sheet stays open to cycle),
+    so any card can be set to/from "Bleed in art" after upload.
+  Uploads import as `none`. (Earlier this was a separate "Uploads already include bleed" checkbox +
+  `ip:preBled` state — **removed**, folded into Bleed style.) Verified live: Bleed style `full` → upload
+  fills the cell; per-card cycle reaches full; lint + build green.
 - **Cookie consent banner:** `CookieBanner` (bottom, centered, site style) shown until
   the user picks Accept/Decline; choice persisted in `localStorage` (`ip:cookieConsent`). Settings always
   use localStorage (technical); the flag only gates *future* analytics cookies (none today — read the flag
