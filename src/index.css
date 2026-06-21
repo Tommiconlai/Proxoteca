@@ -1045,52 +1045,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   word-break: break-word;
 }
 
-/* Pill sorgente accanto al titolo del box Change art (Scryfall / MPCFill). */
-.modal-source-tag {
-  font-family: var(--font-body);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent-light);
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 8px;
-  vertical-align: middle;
-  margin-left: 6px;
-}
-
-/* Scelta sorgente art: due grandi bottoni affiancati. */
-.art-source-row {
-  display: flex;
-  gap: 12px;
-}
-
-.art-source-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 20px 12px;
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: border-color var(--transition), color var(--transition), background var(--transition);
-}
-
-.art-source-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
-  background: var(--bg-glass-hover);
-}
-
-.art-source-btn strong { color: var(--text-primary); font-size: 0.95rem; }
-.art-source-btn span { font-size: 0.74rem; color: var(--text-muted); }
-
 /* Label-bottone per scegliere il file XML MPCFill (input nascosto dentro). */
 .mpc-file {
   display: flex;

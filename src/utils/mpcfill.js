@@ -9,13 +9,9 @@
  */
 
 // w<N> = larghezza richiesta; lh3 non fa upscale, quindi 2000 = nativo o meno.
+// lh3 manda gli header CORS (drive.google.com no) → niente proxy: questo modulo
+// non contatta MAI i server di MPCFill, solo le immagini Drive (lh3) citate nell'XML.
 const driveImg = (id, w = 2000) => `https://lh3.googleusercontent.com/d/${id}=w${w}`;
-
-// API MPCFill (mpcfill.com): nessun header CORS → va via proxy (come i deck link).
-// Le immagini invece arrivano da lh3 (CORS ok), quindi niente proxy per quelle.
-const CORS_PROXY = 'https://corsproxy.io/?url=';
-const px = (u) => CORS_PROXY + encodeURIComponent(u);
-const MPC_API = 'https://mpcfill.com';
 
 const stripExt = (s) => (s || '').replace(/\.[a-z0-9]+$/i, '').trim();
 
@@ -89,66 +85,3 @@ export async function fetchMpcImages(cards, onProgress) {
   }
   return { files, notFound };
 }
-
-// ── Ricerca art su MPCFill (per il box "Change art") ───────────────────────────
-
-// Tutte le sorgenti come tuple [pk, true] (lo schema vuole liste, non interi).
-// Cache: l'elenco cambia di rado e serve a ogni ricerca.
-let _sources = null;
-async function allSourceTuples() {
-  if (!_sources) {
-    _sources = fetch(px(`${MPC_API}/2/sources/`))
-      .then((r) => { if (!r.ok) throw new Error(`MPCFill sources responded ${r.status}`); return r.json(); })
-      .then((j) => {
-        // Un errore del proxy arriva come JSON valido (es. 403 {"error":…}) → r.json()
-        // non lancia; senza questo controllo si cacherebbe [] per tutta la sessione.
-        const tuples = Object.values(j.results || {}).map((s) => [s.pk, true]);
-        if (!tuples.length) throw new Error('MPCFill returned no sources');
-        return tuples;
-      })
-      .catch((e) => { _sources = null; throw e; });
-  }
-  return _sources;
-}
-
-/**
- * Cerca tutte le stampe di una carta nel database MPCFill.
- * @returns {Promise<{id,thumb,png,set,setName}[]>} forma compatibile con la griglia
- *   del box Change art (set = nome sorgente, png = lh3 ad alta risoluzione).
- */
-export async function searchMpcPrints(name, limit = 90) {
-  const sources = await allSourceTuples();
-  const body = {
-    searchSettings: {
-      searchTypeSettings: { fuzzySearch: false, filterCardbacks: false },
-      sourceSettings: { sources },
-      filterSettings: { minimumDPI: 0, maximumDPI: 1500, maximumSize: 30, languages: [], includesTags: [], excludesTags: [] },
-    },
-    queries: [{ query: name.trim().toLowerCase(), cardType: 'CARD' }],
-  };
-  const r = await fetch(px(`${MPC_API}/2/editorSearch/`), {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`MPCFill responded ${r.status}`);
-  const j = await r.json();
-  const key = Object.keys(j.results || {})[0];
-  const ids = (key && j.results[key].CARD) || [];
-  if (!ids.length) return [];
-
-  const top = ids.slice(0, limit);
-  // Dettagli (nome sorgente per l'etichetta) — batch unico, opzionale.
-  let details = {};
-  try {
-    const dr = await fetch(px(`${MPC_API}/2/cards/`), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cardIdentifiers: top }),
-    });
-    if (dr.ok) details = (await dr.json()).results || {};
-  } catch { /* etichetta opzionale */ }
-
-  return top.map((id) => {
-    const d = details[id] || {};
-    return { id, thumb: driveImg(id, 400), png: driveImg(id, 2000), set: d.sourceName || 'MPC', setName: d.name || name };
-  });
-}
-
-export const MPC_PRINTS_LIMIT = 90;
