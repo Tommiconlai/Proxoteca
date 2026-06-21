@@ -1045,6 +1045,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
   word-break: break-word;
 }
 
+/* Label-bottone per scegliere il file XML MPCFill (input nascosto dentro). */
+.mpc-file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  word-break: break-all;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

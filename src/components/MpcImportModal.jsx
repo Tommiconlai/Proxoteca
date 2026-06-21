@@ -1,0 +1,111 @@
+import { useState } from 'react';
+import { parseMpcXml, fetchMpcImages } from '../utils/mpcfill';
+import { IconX } from './icons';
+
+// Import da un file XML di MPCFill: seleziona il file → scarica le immagini.
+export default function MpcImportModal({ open, onClose, onImport }) {
+    const [cards, setCards] = useState(null);    // carte trovate nel file
+    const [fileName, setFileName] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [progress, setProgress] = useState({ done: 0, total: 0 });
+    const [result, setResult] = useState(null);  // { imported, notFound }
+    const [error, setError] = useState(null);
+
+    if (!open) return null;
+
+    const close = () => { if (!busy) onClose(); };
+
+    const onFile = async (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        setError(null); setResult(null); setCards(null); setFileName(f.name);
+        try {
+            const { cards } = parseMpcXml(await f.text());
+            setCards(cards);
+        } catch (err) {
+            setError(err.message || 'Could not read the file.');
+        }
+    };
+
+    const copies = cards ? cards.reduce((n, c) => n + c.count, 0) : 0;
+
+    const handleImport = async () => {
+        if (!cards) return;
+        setBusy(true); setError(null); setProgress({ done: 0, total: cards.length });
+        try {
+            const { files, notFound } = await fetchMpcImages(cards, (done, total) => setProgress({ done, total }));
+            if (files.length) onImport(files);
+            setResult({ imported: files.length, notFound });
+        } catch (e) {
+            setError(e.message || 'Error during import.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={close}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Import from MPCFill">
+                <div className="modal-header">
+                    <h2>Import from MPCFill</h2>
+                    <button className="modal-close" onClick={close} aria-label="Close" disabled={busy}>
+                        <IconX size={18} />
+                    </button>
+                </div>
+
+                <p className="modal-hint">
+                    Pick a MPCFill <code>.xml</code> order file. Images are pulled from the
+                    Google&nbsp;Drive links inside it and come print-ready with bleed —
+                    set <b>Bleed</b> to <b>3&nbsp;mm</b> for accurate crop marks.
+                </p>
+
+                <label className="btn-secondary mpc-file">
+                    <input type="file" accept=".xml,text/xml,application/xml" onChange={onFile} disabled={busy} hidden />
+                    {fileName || 'Choose .xml file…'}
+                </label>
+
+                {cards && !result && (
+                    <p className="modal-hint">
+                        {cards.length} card{cards.length > 1 ? 's' : ''} found
+                        {copies !== cards.length ? ` (${copies} with copies)` : ''}.
+                    </p>
+                )}
+
+                {error && (
+                    <div className="info-box info-box-error"><span>{error}</span></div>
+                )}
+
+                {busy && (
+                    <div className="import-status">
+                        <span className="import-spinner" />
+                        Downloading images{progress.total ? ` ${progress.done}/${progress.total}` : '…'}
+                    </div>
+                )}
+
+                {result && (
+                    <div className="import-result">
+                        <div>✓ {result.imported} image{result.imported !== 1 ? 's' : ''} imported</div>
+                        {result.notFound.length > 0 && (
+                            <div className="import-notfound">
+                                ✗ {result.notFound.length} failed: {result.notFound.join(', ')}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="modal-actions">
+                    {!result && (
+                        <button className="btn-secondary" onClick={close} disabled={busy}>Close</button>
+                    )}
+                    <button
+                        className="btn-generate import-btn"
+                        onClick={busy ? undefined : (result ? onClose : handleImport)}
+                        disabled={busy || (!result && !cards)}
+                    >
+                        {busy ? <><span className="spinner" /> Importing…</> : result ? 'Done' : 'Import'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

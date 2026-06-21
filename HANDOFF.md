@@ -46,6 +46,8 @@ before restarting.
 | `src/App.jsx` | Root: state (images, format incl. `custom`, sheetUnit/sheetW/sheetH, bleed, bleedStyle, dpi, cardType/cardW/cardH, cropMarks/cropStyle, import + art-picker modals), derives `customSheet` (mm) for custom sheets, header (logo + `?` **help tooltip** — pure-CSS `.help` hover/focus popover with the 4-step how-to, replaced the old tagline) / sidebar / main layout, `react-dropzone` (full-area drag&drop + `open()`). Settings persisted to `localStorage` (`ip:format`/`ip:bleed`/`ip:bleedStyle`/`ip:dpi`/`ip:cardType`/`ip:cardW`/`ip:cardH`/`ip:cropMarks`/`ip:cropStyle`/`ip:sheetUnit`/`ip:sheetW`/`ip:sheetH`; `ip:cardlist` lives in the import modal). Image items carry a `bleedMode` (`none`/`stretch`/`mirror`). Handlers: add / remove / clearAll / toggleBleed (none↔stretch) / duplicate / replaceArt (updates edition) / saveProject (Scryfall cards → `.txt`). Scryfall image items carry `{name,set,collector,primary}` for the save; manual uploads don't (→ excluded). Sidebar = scrolling `.sidebar-scroll` (PageSettings) + fixed `.sidebar-export` footer (flex column): **Add cards** (`.btn-add`, green, opens the upload/Scryfall `.add-menu`) → **Generate PDF** → row [**Save list** · **Delete all**]. Save/Delete are always rendered, `disabled` when `images.length === 0` (Save list hovers green, Delete hovers red). The `addMenuOpen` state + click-outside live here (moved out of the preview footer) |
 | `src/components/PageSettings.jsx` | Sidebar settings in **2 group cards**: "Foglio & carta" (format presets + custom sheet W×H with mm/inch toggle · card type presets + custom W×H · bleed) and "Stampa" (bleed-style auto/mirror/stretch/black · dpi · crop marks: show checkbox + style Linee/Squadrette) + "Riepilogo" info box. Above the dpi field, a **low-res warning** (`.lowres-warn`, prop `lowResCount`) appears only when ≥1 placed card is below the chosen DPI — explains the red `!` preview marker. `SelectField` helper = label + `aria-label`ed select |
 | `src/components/PagePreview.jsx` | Preview: one large centered page (`PageCanvas`) + per-card hover overlay (click = change art; buttons: duplicate, bleed on/off, delete). `PageCanvas` draws cards + bleed + crop marks + a **low-res warning** triangle (source < ½ the px the chosen DPI needs). Footer: pager + count (the add "+" menu moved to the sidebar export footer) |
+| `src/components/MpcImportModal.jsx` | Modal: pick a **MPCFill `.xml`** order file → `parseMpcXml` lists cards → `fetchMpcImages` downloads each from Google Drive → `onImport` (= App `addItems`). File input is a hidden `<input>` inside a `.mpc-file` label. Shows count, progress, and failed-download names |
+| `src/utils/mpcfill.js` | `parseMpcXml(text)` (DOMParser → `{cards:[{id,name,count}]}`, fronts then backs; comma-separated `<slots>` = copies; name from `<query>`) + `fetchMpcImages(cards,onProgress)` (downloads via **`lh3.googleusercontent.com/d/<id>=w2000`** — the only Drive endpoint that sends CORS headers, so the blob is readable/not tainted; `drive.google.com/uc` + `/thumbnail` 403 even through the proxy). Each card → `{file, bleedMode:'full', name}`, one entry per copy (same `File` reused) |
 | `src/components/ScryfallImportModal.jsx` | Modal: paste a card list **or a deck link** (URL field + "Carica" → `fetchDeckList` fills the textarea) → fetch from Scryfall → add to images. Pasted text persisted to `localStorage` (`ip:cardlist`). Accepts `(SET) collector` to pin a printing |
 | `src/components/ArtPickerModal.jsx` | Click a placed card → lists all Scryfall printings (`fetchPrints`, `/cards/search?unique=prints`) → pick one → `downloadAsFile` swaps `file`+`preview` (id/bleedMode kept). Card name is derived from the **filename**; `fetchPrints` picks the printing face whose name matches it, so DFC backs get back-face prints |
 | `src/hooks/useIsMobile.js` | `matchMedia('(max-width: 768px)')` via `useSyncExternalStore` → boolean. App renders the desktop tree above 768px, `MobileLayout` at/below |
@@ -82,7 +84,19 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Bigger change-art thumbnails on touch (most recent):** the mobile `.art-grid` track
+- **MPCFill XML import (most recent):** the `+` menu got a third option, **Import from MPCFill**
+  (desktop add-menu + mobile add-sheet). `MpcImportModal` takes a MPCFill `.xml` order file;
+  `utils/mpcfill.js` parses it (`<id>` = Google Drive file, `<slots>` count = copies, `<query>`
+  = card name) and downloads each image. **Key finding:** Drive images are only CORS-fetchable
+  via `https://lh3.googleusercontent.com/d/<id>=w<N>` — `drive.google.com/uc?export=download`
+  and `/thumbnail` return 403 even through `corsproxy.io`. The lh3 blob is readable (not tainted)
+  → PDF export works with no proxy. MPC images are **already full-bleed (~3 mm, aspect 0.735)**, so
+  they import with a new **`bleedMode:'full'`** (added to `resolveBleedMode` + `drawCardWithBleed`
+  in `pdfGenerator.js`): the image fills the entire cell (trim+bleed), no bleed generation, and the
+  global bleed-style never overrides it. The modal hints to set **Bleed = 3 mm** so crop marks land
+  on the real trim. Verified live: 3-card/4-copy XML → 4 full-bleed cards drawn on the sheet; lint +
+  build green.
+- **Bigger change-art thumbnails on touch:** the mobile `.art-grid` track
   (base `minmax(84px,1fr)`) is now **126px on phones (+50%)** and **210px on portrait tablets
   (+150%)**. Phone value lives in the shared full-screen-modal `@media`; a dedicated
   `@media (min-width:769px) and (max-width:1024px) and (orientation:portrait)` overrides the

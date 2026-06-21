@@ -158,6 +158,9 @@ function blit(ctx, img, sx, sy, sw, sh, dx, dy, dw, dh, flipX, flipY) {
  */
 export function resolveBleedMode(itemMode, style) {
   const m = itemMode || 'none';
+  // 'full' = immagine già con abbondanza (MPCFill): riempie la cella, mai sovrascritto
+  // dallo stile globale (auto/mirror/stretch/black) che vale solo per carte trim.
+  if (m === 'full') return 'full';
   if (!style || style === 'auto') return m;
   if (m === 'none') return 'none';
   return style;
@@ -184,6 +187,13 @@ export function drawCardWithBleed(ctx, img, x, y, cellW, cellH, bleedPx, mode = 
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
   if (tw <= 0 || th <= 0 || !iw || !ih) return;
+
+  // 'full': l'immagine contiene già l'abbondanza (MPCFill ~3mm) → riempie tutta
+  // la cella (trim + bleed), nessuna generazione. A bleed≈3mm il taglio coincide.
+  if (mode === 'full') {
+    ctx.drawImage(img, 0, 0, iw, ih, x, y, cellW, cellH);
+    return;
+  }
 
   // ponytail: scarta la frangia esterna del PNG (1-3 px di antialias, più scura) dal
   // trim E dalle fasce. Su full-art chiare lasciava una riga scura sul taglio (mirror/

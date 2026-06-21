@@ -4,6 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import PageSettings from './components/PageSettings';
 import PagePreview from './components/PagePreview';
 import ScryfallImportModal from './components/ScryfallImportModal';
+import MpcImportModal from './components/MpcImportModal';
 import ArtPickerModal from './components/ArtPickerModal';
 import MobileLayout from './components/MobileLayout';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -39,6 +40,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [mpcOpen, setMpcOpen] = useState(false); // import da file XML MPCFill
   const [addMenuOpen, setAddMenuOpen] = useState(false); // menu "+" in sidebar (carica file / Scryfall)
   const [editingId, setEditingId] = useState(null); // carta di cui cambiare l'art
   // Foglio personalizzato in mm (sheetW/H sono nell'unità scelta: mm o inch).
@@ -215,9 +217,10 @@ export default function App() {
           previewProps={previewProps}
           actions={{ onGenerate: handleGenerate, onSave: handleSaveProject, onClear: handleClearAll,
             loading, error, notice, count: images.length, missing, lowResCount, dpi }}
-          addMenu={{ onUpload: open, onImport: () => setImportOpen(true) }}
+          addMenu={{ onUpload: open, onImport: () => setImportOpen(true), onImportMpc: () => setMpcOpen(true) }}
         />
         <ScryfallImportModal open={importOpen} onClose={() => setImportOpen(false)} onImport={addItems} />
+        <MpcImportModal open={mpcOpen} onClose={() => setMpcOpen(false)} onImport={addItems} />
         {editing && <ArtPickerModal key={editing.id} card={editing} onClose={() => setEditingId(null)} onPick={handleReplaceArt} />}
       </>
     );
@@ -260,6 +263,9 @@ export default function App() {
                   </button>
                   <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); setImportOpen(true); }}>
                     <IconDownload size={15} /> Import from Scryfall
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); setMpcOpen(true); }}>
+                    <IconFile size={15} /> Import from MPCFill
                   </button>
                 </div>
               )}
@@ -315,6 +321,8 @@ export default function App() {
         onClose={() => setImportOpen(false)}
         onImport={addItems}
       />
+
+      <MpcImportModal open={mpcOpen} onClose={() => setMpcOpen(false)} onImport={addItems} />
 
       {editing && (
         <ArtPickerModal

@@ -40,6 +40,7 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
                   <div className="sheet-handle" />
                   <button role="menuitem" onClick={() => { setAddOpen(false); addMenu.onUpload(); }}><IconImage size={18} /> Upload files</button>
                   <button role="menuitem" onClick={() => { setAddOpen(false); addMenu.onImport(); }}><IconDownload size={18} /> Import from Scryfall</button>
+                  <button role="menuitem" onClick={() => { setAddOpen(false); addMenu.onImportMpc(); }}><IconFile size={18} /> Import from MPCFill</button>
                 </div>
               </div>
             )}
