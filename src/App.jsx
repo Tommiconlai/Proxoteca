@@ -187,7 +187,18 @@ export default function App() {
       <header className="app-header">
         <Logo size={34} className="logo-mark" />
         <h1>Proxoteca</h1>
-        <span className="tagline">Lay out card proxies for printing</span>
+        <div className="help">
+          <button type="button" className="help-btn" aria-label="How it works">?</button>
+          <div className="help-tooltip" role="tooltip">
+            <strong>How it works</strong>
+            <ol>
+              <li><b>Add cards</b> — upload images, or import from Scryfall (paste a card list or a deck link).</li>
+              <li><b>Set up</b> — sheet &amp; card size, bleed and crop marks in the sidebar.</li>
+              <li><b>Tweak</b> — click a card to change its printing; hover a card to duplicate, toggle bleed, or remove it.</li>
+              <li><b>Export</b> — <b>Generate PDF</b> (print-ready). <b>Save list</b> exports your Scryfall cards as a reloadable deck list.</li>
+            </ol>
+          </div>
+        </div>
       </header>
 
       {/* ── Body ── */}
