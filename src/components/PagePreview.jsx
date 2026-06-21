@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
 import { getGridInfo, cropMarkSpan, drawCardWithBleed, resolveBleedMode } from '../utils/pdfGenerator';
-import { IconX, IconPlus, IconImage, IconDownload, IconCopy, IconFrame } from './icons';
+import { IconX, IconCopy, IconFrame } from './icons';
 
 // ── Carica un'immagine come HTMLImageElement (async) ─────────
 function loadImage(src) {
@@ -190,12 +190,10 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
 }
 
 // ── Componente principale ─────────────────────────────────────
-export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, onAddPhotos, onImportScryfall, isDragActive, missing }) {
+export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
-    const [menuOpen, setMenuOpen] = useState(false);
     const stageRef = useRef(null);
-    const menuRef = useRef(null);
 
     const info = useMemo(() => getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet), [formatKey, bleedMm, cardW, cardH, customSheet]);
     const perPage = Math.max(1, info.perPage);
@@ -224,16 +222,6 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
         ro.observe(el);
         return () => ro.disconnect();
     }, []);
-
-    // Chiude il menu "+" al click fuori
-    useEffect(() => {
-        if (!menuOpen) return;
-        const onDoc = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-        };
-        document.addEventListener('mousedown', onDoc);
-        return () => document.removeEventListener('mousedown', onDoc);
-    }, [menuOpen]);
 
     // La pagina riempie lo spazio mantenendo le proporzioni carta,
     // limitata sia in larghezza sia in altezza.
@@ -358,37 +346,6 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                         {images.length} img{missing > 0 ? ` · ${missing} missing` : ''}
                     </span>
                 )}
-                <div className="add-menu-wrap" ref={menuRef}>
-                    {menuOpen && (
-                        <div className="add-menu" role="menu">
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => { setMenuOpen(false); onAddPhotos(); }}
-                            >
-                                <IconImage size={15} /> Upload files
-                            </button>
-                            <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => { setMenuOpen(false); onImportScryfall(); }}
-                            >
-                                <IconDownload size={15} /> Import from Scryfall
-                            </button>
-                        </div>
-                    )}
-                    <button
-                        type="button"
-                        className={`add-photos-btn${menuOpen ? ' open' : ''}`}
-                        onClick={() => setMenuOpen((o) => !o)}
-                        aria-haspopup="menu"
-                        aria-expanded={menuOpen}
-                        title="Add"
-                        aria-label="Add"
-                    >
-                        <IconPlus size={26} />
-                    </button>
-                </div>
             </div>
         </div>
     );

@@ -193,6 +193,54 @@ h3 {
   padding: 16px 20px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Bottone "+" (add) nella sidebar, sopra Genera PDF — rettangolare arrotondato, verde */
+.btn-add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(46, 204, 113, 0.12);
+  border: 1.5px solid rgba(46, 204, 113, 0.5);
+  border-radius: var(--radius-md);
+  color: #2ecc71;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition),
+    transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-add.open,
+.btn-add:hover {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: #2ecc71;
+}
+
+.btn-add:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(46, 204, 113, 0.25);
+}
+
+.btn-add:active {
+  transform: translateY(0);
+}
+
+.export-row {
+  display: flex;
+  gap: 8px;
+}
+
+.export-row .btn-secondary {
+  flex: 1;
+  justify-content: center;
 }
 
 /* ============================================================
@@ -638,33 +686,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .preview-count {
   font-size: 0.72rem;
   color: var(--text-muted);
-}
-
-/* Bottone verde "aggiungi foto" */
-.add-photos-btn {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1.5px solid rgba(46, 204, 113, 0.5);
-  background: rgba(46, 204, 113, 0.12);
-  color: #2ecc71;
-  cursor: pointer;
-  transition: background var(--transition), border-color var(--transition),
-    transform var(--transition), box-shadow var(--transition);
-}
-
-.add-photos-btn:hover {
-  background: rgba(46, 204, 113, 0.2);
-  border-color: #2ecc71;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(46, 204, 113, 0.25);
-}
-
-.add-photos-btn:active {
-  transform: translateY(0);
 }
 
 /* Menu del bottone "+" (carica file / importa da Scryfall) */
@@ -1114,10 +1135,22 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   border-color: var(--danger);
   color: var(--danger);
   background: rgba(239, 68, 68, 0.08);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Save list: hover verde (affordance "salva/crea"), non rosso come Delete all */
+.btn-save:hover:not(:disabled) {
+  border-color: #2ecc71;
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.08);
 }
 
 /* ============================================================

@@ -7,7 +7,7 @@ import ScryfallImportModal from './components/ScryfallImportModal';
 import ArtPickerModal from './components/ArtPickerModal';
 import { generatePDF, getGridInfo, PAPER_FORMATS } from './utils/pdfGenerator';
 import { downloadAsFile, buildDeckList } from './utils/scryfall';
-import { IconFile, IconAlert, IconTrash, IconDownload, Logo } from './components/icons';
+import { IconFile, IconAlert, IconTrash, IconDownload, IconImage, IconPlus, Logo } from './components/icons';
 
 // Lettura numerica da localStorage con default (null/NaN → default, 0 valido).
 const readNum = (k, d) => {
@@ -37,6 +37,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false); // menu "+" in sidebar (carica file / Scryfall)
   const [editingId, setEditingId] = useState(null); // carta di cui cambiare l'art
   // Foglio personalizzato in mm (sheetW/H sono nell'unità scelta: mm o inch).
   const customSheet = formatKey === 'custom'
@@ -68,6 +69,15 @@ export default function App() {
   useEffect(() => () => {
     imagesRef.current.forEach(i => URL.revokeObjectURL(i.preview));
   }, []);
+
+  // Chiude il menu "+" della sidebar al click fuori
+  const addMenuRef = useRef(null);
+  useEffect(() => {
+    if (!addMenuOpen) return;
+    const onDoc = (e) => { if (addMenuRef.current && !addMenuRef.current.contains(e.target)) setAddMenuOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [addMenuOpen]);
 
   // Crea gli item immagine. entries: [{file, bleedMode}].
   const addItems = (entries) => {
@@ -215,6 +225,27 @@ export default function App() {
           />
           </div>
           <div className="sidebar-section sidebar-export">
+            <div className="add-menu-wrap" ref={addMenuRef}>
+              {addMenuOpen && (
+                <div className="add-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); open(); }}>
+                    <IconImage size={15} /> Upload files
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); setImportOpen(true); }}>
+                    <IconDownload size={15} /> Import from Scryfall
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                className={`btn-add${addMenuOpen ? ' open' : ''}`}
+                onClick={() => setAddMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={addMenuOpen}
+              >
+                <IconPlus size={18} /> Add cards
+              </button>
+            </div>
             <button
               className="btn-generate"
               onClick={handleGenerate}
@@ -225,16 +256,14 @@ export default function App() {
                 : <><IconFile size={18} /> Generate PDF</>
               }
             </button>
-            {images.length > 0 && (
-              <button className="btn-secondary" onClick={handleSaveProject}>
+            <div className="export-row">
+              <button className="btn-secondary btn-save" onClick={handleSaveProject} disabled={images.length === 0}>
                 <IconDownload size={15} /> Save list
               </button>
-            )}
-            {images.length > 0 && (
-              <button className="btn-secondary" onClick={handleClearAll}>
+              <button className="btn-secondary" onClick={handleClearAll} disabled={images.length === 0}>
                 <IconTrash size={15} /> Delete all
               </button>
-            )}
+            </div>
             {notice && (
               <div className="info-box"><span>{notice}</span></div>
             )}
@@ -265,8 +294,6 @@ export default function App() {
             onChangeArt={setEditingId}
             onToggleBleed={handleToggleBleed}
             onDuplicate={handleDuplicate}
-            onAddPhotos={open}
-            onImportScryfall={() => setImportOpen(true)}
             isDragActive={isDragActive}
             missing={missing}
           />
