@@ -192,7 +192,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
 }
 
 // ── Componente principale ─────────────────────────────────────
-export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing }) {
+export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing, onCardTap }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
     const stageRef = useRef(null);
@@ -286,9 +286,10 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                             height: cardH * scale,
                                             cursor: 'pointer',
                                         }}
-                                        onClick={() => onChangeArt(img.id)}
-                                        title="Change art"
+                                        onClick={() => (onCardTap ? onCardTap(img.id) : onChangeArt(img.id))}
+                                        title={onCardTap ? 'Edit card' : 'Change art'}
                                     >
+                                        {!onCardTap && (<>
                                         <button
                                             type="button"
                                             className="preview-card-dup"
@@ -317,6 +318,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                         >
                                             <IconX size={12} />
                                         </button>
+                                        </>)}
                                     </div>
                                 );
                             })}

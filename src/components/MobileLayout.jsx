@@ -3,10 +3,12 @@ import BottomTabBar from './BottomTabBar';
 import { Logo, IconFile, IconDownload, IconTrash, IconPlus, IconImage } from './icons';
 import PageSettings from './PageSettings';
 import PagePreview from './PagePreview';
+import CardActionSheet from './CardActionSheet';
 
 export default function MobileLayout({ settingsProps, previewProps, actions, addMenu }) {
   const [tab, setTab] = useState('cards');
   const [addOpen, setAddOpen] = useState(false);
+  const [sel, setSel] = useState(null);
   return (
     <div className="mobile">
       <header className="mobile-header">
@@ -16,7 +18,7 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
       <main className="mobile-body" role="tabpanel">
         {tab === 'cards' && (
           <div className="mobile-cards">
-            <PagePreview {...previewProps} />
+            <PagePreview {...previewProps} onCardTap={setSel} />
             <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add cards"><IconPlus size={26} /></button>
             {addOpen && (
               <div className="sheet-overlay" onClick={() => setAddOpen(false)}>
@@ -27,6 +29,14 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
                 </div>
               </div>
             )}
+            <CardActionSheet
+              card={previewProps.images.find((i) => i.id === sel) || null}
+              onClose={() => setSel(null)}
+              onChangeArt={previewProps.onChangeArt}
+              onDuplicate={previewProps.onDuplicate}
+              onToggleBleed={previewProps.onToggleBleed}
+              onRemove={previewProps.onRemove}
+            />
           </div>
         )}
         {tab === 'settings' && (
