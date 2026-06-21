@@ -1492,10 +1492,11 @@ body::before {
   .modal-overlay {
     padding: 0;
   }
-  /* Griglia art più compatta + riempie il modale full-screen (no spazio vuoto sotto).
-     Il modale è flex-column 100dvh: la parte scrollabile deve flex:1, non max-height:60vh. */
+  /* Griglia art riempie il modale full-screen (no spazio vuoto sotto).
+     Il modale è flex-column 100dvh: la parte scrollabile deve flex:1, non max-height:60vh.
+     Track base 84px -> telefono +50% = 126px. Tablet portrait override sotto (+150%). */
   .art-grid {
-    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
     flex: 1;
     min-height: 0;
     max-height: none;
@@ -1508,6 +1509,13 @@ body::before {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+  }
+}
+
+/* Tablet in verticale: immagini gallery change-art +150% (track base 84px -> 210px). */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  .art-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   }
 }
 .sheet button:active { background: var(--bg-glass-hover); }

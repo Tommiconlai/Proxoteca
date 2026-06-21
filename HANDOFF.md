@@ -82,7 +82,14 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Mobile layout on portrait tablets (most recent):** `MobileLayout` now also renders on
+- **Bigger change-art thumbnails on touch (most recent):** the mobile `.art-grid` track
+  (base `minmax(84px,1fr)`) is now **126px on phones (+50%)** and **210px on portrait tablets
+  (+150%)**. Phone value lives in the shared full-screen-modal `@media`; a dedicated
+  `@media (min-width:769px) and (max-width:1024px) and (orientation:portrait)` overrides the
+  track for tablets. (`1fr` still stretches each track to fill, so rendered cells are a bit
+  larger than the min.) Desktop stays the fixed 168px. Verified live: 375px → 158px cells/2 cols,
+  820px → 249px cells/3 cols.
+- **Mobile layout on portrait tablets:** `MobileLayout` now also renders on
   **tablets held vertically**, not just phones. `useIsMobile` QUERY went from `(max-width:768px)`
   to `(max-width:768px), (max-width:1024px) and (orientation:portrait)`; the `index.css`
   full-screen-modal `@media` was changed to the **same** condition (keep the two in sync). Tablet
