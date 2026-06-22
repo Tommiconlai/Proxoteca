@@ -43,6 +43,7 @@ export default function App() {
   const [importOpen, setImportOpen] = useState(false);
   const [mpcOpen, setMpcOpen] = useState(false); // import da file XML MPCFill
   const [addMenuOpen, setAddMenuOpen] = useState(false); // menu "+" in sidebar (carica file / Scryfall)
+  const [helpOpen, setHelpOpen] = useState(false); // tooltip "?" header (apri al click, non hover)
   const [editingId, setEditingId] = useState(null); // carta di cui cambiare l'art
   // Foglio personalizzato in mm (sheetW/H sono nell'unità scelta: mm o inch).
   const customSheet = formatKey === 'custom'
@@ -83,6 +84,15 @@ export default function App() {
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [addMenuOpen]);
+
+  // Chiude il tooltip "?" al click fuori
+  const helpRef = useRef(null);
+  useEffect(() => {
+    if (!helpOpen) return;
+    const onDoc = (e) => { if (helpRef.current && !helpRef.current.contains(e.target)) setHelpOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [helpOpen]);
 
   // Crea gli item immagine. entries: [{file, bleedMode}].
   const addItems = (entries) => {
@@ -245,8 +255,10 @@ export default function App() {
       <header className="app-header">
         <Logo size={34} className="logo-mark" />
         <h1>Proxoteca</h1>
-        <div className="help">
-          <button type="button" className="help-btn" aria-label="How it works">?</button>
+        <div className={`help${helpOpen ? ' open' : ''}`} ref={helpRef}>
+          <button type="button" className="help-btn" aria-label="How it works"
+            aria-haspopup="dialog" aria-expanded={helpOpen}
+            onClick={() => setHelpOpen((o) => !o)}>?</button>
           <div className="help-tooltip" role="tooltip">
             <strong>How it works</strong>
             <ol>

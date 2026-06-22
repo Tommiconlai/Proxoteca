@@ -138,7 +138,7 @@ h3 {
   font-family: var(--font);
   font-size: 0.95rem;
   font-weight: 700;
-  cursor: help;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,7 +146,7 @@ h3 {
 }
 
 .help-btn:hover,
-.help:focus-within .help-btn {
+.help.open .help-btn {
   border-color: var(--accent);
   color: var(--accent-light);
   background: var(--bg-glass-hover);
@@ -170,8 +170,7 @@ h3 {
   transition: opacity var(--transition), transform var(--transition), visibility var(--transition);
 }
 
-.help:hover .help-tooltip,
-.help:focus-within .help-tooltip {
+.help.open .help-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -1574,12 +1573,6 @@ body::before {
   }
   .import-textarea {
     flex: 1;
-  }
-  /* Help tooltip visibile quando il pulsante ? è stato tappato */
-  .help.open .help-tooltip {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
   }
 }
 
