@@ -53,14 +53,11 @@ function checkSwatches(label, file) {
 }
 
 console.log('=== jpegCmykDecoder self-check ===');
-// Fixture sintetico CMYK (Pillow, transform=0): il path comune Photoshop (no color
-// transform + inversione Adobe). Coperto da un vero JPEG CMYK, non da uno fittizio.
-checkSwatches('Synthetic CMYK (transform 0)', join(FIX, 'synthetic_cmyk.jpg'));
-// Il file "reale" fornito (photoshop_cmyk.jpg) è risultato RGB (SOF Nf=3): warning, skip.
-checkSwatches('Supplied Photoshop file', join(FIX, 'photoshop_cmyk.jpg'));
-
-console.log('\nNote: YCCK (APP14 transform=2) is not covered — this toolchain has no CMYK-JPEG');
-console.log('encoder that emits YCCK; supply a real Adobe YCCK CMYK JPEG to exercise that branch.');
+// Entrambi i rami APP14 coperti da VERI JPEG CMYK (stesse 5 bande C/M/Y/K/paper):
+// - synthetic_cmyk.jpg → transform 0 (no color transform, inversione Adobe) — Pillow.
+// - photoshop_cmyk.jpg → transform 2 (YCCK) — export Adobe reale.
+checkSwatches('Synthetic CMYK (APP14 transform 0)', join(FIX, 'synthetic_cmyk.jpg'));
+checkSwatches('Real Adobe CMYK (APP14 transform 2 / YCCK)', join(FIX, 'photoshop_cmyk.jpg'));
 
 if (failures) throw new Error(`FAIL (${failures} assertion${failures > 1 ? 's' : ''})`);
 console.log('\nPASS');

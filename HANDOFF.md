@@ -109,13 +109,14 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
   - **§2 native profile-mismatch warning:** `cmykRaster.extractIccFromJpeg` pulls the embedded ICC from APP2
     (`ICC_PROFILE`, multi-chunk). On add, native CMYK JPEGs get `embeddedIccName` read via lcms; if it differs from
     the selected target a **non-blocking** warning shows in the CMYK box (export unaffected, still passthrough).
-  - **§3 decoder self-check** (`utils/vendor/jpegCmykDecoder.selfcheck.js`, `node`-runnable): decodes a **real CMYK
-    JPEG** (synthesised via Pillow, 5 swatches), asserts non-inverted DeviceCMYK incl. the **paper-white tripwire**,
-    prints the APP14 transform. **The user-supplied `photoshop_cmyk.jpg` is actually a 3-channel RGB JPEG** (SOF Nf=3,
-    APP14 transform=1) — unusable for the CMYK path; the self-check warns + skips it. **YCCK (transform=2) has no
-    fixture** (no CMYK-JPEG encoder here emits it). Verified live: bundled default generates PDF/X-1a with no upload;
-    switching profile changes the OutputIntent identifier; custom upload accepted; mismatch warning fires only on a
-    real mismatch. Lint + build + self-check green; the 3 `.icc` + `lcms.wasm` emit to `dist/assets/`.
+  - **§3 decoder self-check** (`utils/vendor/jpegCmykDecoder.selfcheck.js`, `node`-runnable): asserts non-inverted
+    DeviceCMYK on **two real CMYK JPEGs** covering **both APP14 branches** — `synthetic_cmyk.jpg` (transform 0, Pillow)
+    and `photoshop_cmyk.jpg` (**transform 2 / YCCK**, real Adobe export, 500×400), incl. the **paper-white inversion
+    tripwire**; prints each detected transform. (The first `photoshop_cmyk.jpg` supplied was RGB; the user replaced it
+    with a correct CMYK YCCK file — both branches now covered.) Verified live: bundled default generates PDF/X-1a with
+    no upload; switching profile changes the OutputIntent identifier; custom upload accepted; mismatch warning fires
+    only on a real mismatch; the **real YCCK card** runs end-to-end (passthrough → 1 DeviceCMYK image, %PDF-1.4,
+    OutputIntent, no RGB). Lint + build + self-check green; the 3 `.icc` + `lcms.wasm` emit to `dist/assets/`.
 - **Compression slider:** Print group has a **Compression** range slider (30–100%, default 85%,
   `ip:quality`) driving the RGB export's JPEG quality — `generatePDF(…, quality)` → `compressImage` →
   `toDataURL('image/jpeg', q)`. Lower = smaller PDF (verified: 100%→550KB vs 40%→45KB on the same card).
@@ -133,9 +134,8 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
   swatches); `decodeCMYK` returns them **exactly** (Cyan→[255,0,0,0], …, white→0), and end-to-end through
   the real exporter the **inflated DeviceCMYK image in the output PDF preserves those values byte-for-byte**
   (200×280×4, no inversion); raw-bleed modes unit-checked; mixed RGB+CMYK sheet → 2 DeviceCMYK images, still
-  %PDF-1.4 / OutputIntent / no RGB / no ObjStm. Lint + build green. (Still unverified here: **Acrobat
-  Preflight / print-shop proof**, and **YCCK** transformCode=2 files — the swatch was transformCode=0,
-  though the YCCK branch is jpeg-js's well-tested path.)
+  %PDF-1.4 / OutputIntent / no RGB / no ObjStm. Lint + build green. (YCCK transform=2 later covered in Phase 3
+  by a real Adobe fixture; **Acrobat Preflight / print-shop proof** remains user-side.)
 - **CMYK / PDF-X-1a print export — Phase 1:** new **Output: RGB (screen) / CMYK (print)**
   toggle in the "Print" group. CMYK produces a **press-ready PDF/X-1a:2003** (DeviceCMYK images, one
   embedded ICC as OutputIntent). The RGB/jsPDF path is **untouched** (additive). New deps `pdf-lib` +
@@ -402,9 +402,8 @@ All verified live + `npm run lint` clean + `npm run build` green.
     `https://tommiconlai.github.io/Proxoteca/` after deploy and a CMYK export runs end-to-end. Emit verified in
     local `dist/assets/`; live not checked.
   - **§7 Acrobat preflight + contract proof = the acceptance gate, still user-side** (structural checks pass here).
-  - **Decoder YCCK (APP14 transform=2) has no fixture** — only transform=0 covered (synthetic Pillow CMYK); no
-    encoder here emits YCCK. The supplied `__fixtures__/photoshop_cmyk.jpg` is actually **RGB** (SOF Nf=3) — re-export
-    as CMYK for real-Adobe coverage.
+  - **Decoder both APP14 branches now covered** — transform 0 (`synthetic_cmyk.jpg`) + transform 2 / YCCK
+    (`photoshop_cmyk.jpg`, real Adobe). Self-check + live e2e green on both.
   - **§5 soft-proof** (CMYK→monitor) and **§6 CMYK-JPEG/DCTDecode** size path are **optional**, not built (preview
     keeps the RGB warning; raw-Flate DeviceCMYK stays the lossless default, heavy at high DPI). Confirm the shop's
     preferred default profile + intent (spec §14) — default = FOGRA39 + RelCol+BPC.
