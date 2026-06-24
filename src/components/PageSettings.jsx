@@ -36,6 +36,8 @@ export default function PageSettings({
     cropMarks, setCropMarks, cropStyle, setCropStyle,
     sheetUnit, setSheetUnit, sheetW, setSheetW, sheetH, setSheetH, customSheet,
     lowResCount = 0,
+    colorMode = 'rgb', setColorMode, renderIntent = 'relative', setRenderIntent,
+    iccProfile = null, onIccUpload, onIccClear,
 }) {
     const { cols, rows, perPage } = getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet);
     const [pw, ph] = formatKey === 'custom' && customSheet
@@ -135,6 +137,38 @@ export default function PageSettings({
             <div className="sidebar-section">
                 <h2>Print</h2>
                 <div className="glass-card compact settings-group">
+                    {/* Output colore: RGB (schermo, jsPDF) | CMYK (stampa, PDF/X-1a) */}
+                    <div className="field">
+                        <SelectField label="Output" value={colorMode} onChange={e => setColorMode(e.target.value)}>
+                            <option value="rgb">RGB (screen)</option>
+                            <option value="cmyk">CMYK (print) — PDF/X-1a</option>
+                        </SelectField>
+                        {colorMode === 'cmyk' && (
+                            <div className="cmyk-box">
+                                <span className="cmyk-tag">PDF/X-1a:2003 · DeviceCMYK · embedded ICC</span>
+                                <div className="icc-row">
+                                    <label className="btn-icc">
+                                        <input type="file" accept=".icc,.icm" hidden
+                                            onChange={e => { const f = e.target.files?.[0]; if (f) onIccUpload?.(f); e.target.value = ''; }} />
+                                        {iccProfile ? 'Change ICC…' : 'Load ICC profile…'}
+                                    </label>
+                                    {iccProfile && (
+                                        <button type="button" className="icc-clear" onClick={() => onIccClear?.()} aria-label="Remove ICC profile">×</button>
+                                    )}
+                                </div>
+                                {iccProfile
+                                    ? <p className="field-hint icc-ok">✓ {iccProfile.name}</p>
+                                    : <p className="field-hint">Upload your print shop’s CMYK ICC profile. It’s embedded as the document OutputIntent and used for the RGB→CMYK conversion.</p>}
+                                <SelectField label="Rendering intent" value={renderIntent} onChange={e => setRenderIntent(e.target.value)}>
+                                    <option value="relative">Relative Colorimetric + BPC</option>
+                                    <option value="perceptual">Perceptual</option>
+                                </SelectField>
+                                <p className="field-hint">Your print shop may prefer a specific intent. Native CMYK files aren’t supported yet — RGB art only (Scryfall/uploads).</p>
+                                <p className="field-hint">Note: the on-screen preview is RGB. Very saturated colours print less vivid in CMYK (smaller gamut) — that’s normal.</p>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="field">
                         <SelectField label="Bleed style" value={bleedStyle} onChange={e => setBleedStyle(e.target.value)}>
                             {BLEED_STYLE_OPTIONS.map(o => (

@@ -37,6 +37,11 @@ export default function App() {
   const [sheetUnit, setSheetUnit] = useState(() => (localStorage.getItem('ip:sheetUnit') === 'in' ? 'in' : 'mm'));
   const [sheetW, setSheetW] = useState(() => readNum('ip:sheetW', 210) || 210);
   const [sheetH, setSheetH] = useState(() => readNum('ip:sheetH', 297) || 297);
+  // Output: 'rgb' (jsPDF, schermo) | 'cmyk' (PDF/X-1a, stampa). Il profilo ICC NON
+  // è persistito (binario; si ri-carica a sessione, come le immagini).
+  const [colorMode, setColorMode] = useState(() => (localStorage.getItem('ip:colorMode') === 'cmyk' ? 'cmyk' : 'rgb'));
+  const [renderIntent, setRenderIntent] = useState(() => (localStorage.getItem('ip:renderIntent') === 'perceptual' ? 'perceptual' : 'relative'));
+  const [iccProfile, setIccProfile] = useState(null); // { bytes:Uint8Array, name, space }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
@@ -66,7 +71,9 @@ export default function App() {
     localStorage.setItem('ip:sheetUnit', sheetUnit);
     localStorage.setItem('ip:sheetW', String(sheetW));
     localStorage.setItem('ip:sheetH', String(sheetH));
-  }, [formatKey, bleedMm, bleedStyle, dpi, cardType, cardW, cardH, cropMarks, cropStyle, sheetUnit, sheetW, sheetH]);
+    localStorage.setItem('ip:colorMode', colorMode);
+    localStorage.setItem('ip:renderIntent', renderIntent);
+  }, [formatKey, bleedMm, bleedStyle, dpi, cardType, cardW, cardH, cropMarks, cropStyle, sheetUnit, sheetW, sheetH, colorMode, renderIntent]);
 
   // Revoca gli object URL residui allo smontaggio (evita leak di memoria).
   // imagesRef tiene il riferimento aggiornato senza ri-registrare l'effect.
@@ -191,11 +198,34 @@ export default function App() {
       : `Saved ${cards} Scryfall card${cards > 1 ? 's' : ''} to proxoteca.txt.`);
   };
 
+  // Carica + valida un profilo ICC CMYK (.icc). Non persistito (binario).
+  const handleIccUpload = async (file) => {
+    if (!file) return;
+    setError(null);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const { readProfileInfo } = await import('./utils/cmykEngine');
+      const info = await readProfileInfo(bytes);
+      if (info.space !== 'CMYK') throw new Error('That ICC profile is not a CMYK profile.');
+      setIccProfile({ bytes, name: info.name || file.name, space: info.space });
+    } catch (err) {
+      setIccProfile(null);
+      setError(err.message || 'Could not read the ICC profile.');
+    }
+  };
+  const handleIccClear = () => setIccProfile(null);
+
   const handleGenerate = async () => {
     setError(null);
     setLoading(true);
     try {
-      await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet);
+      if (colorMode === 'cmyk') {
+        if (!iccProfile) throw new Error('Load the print shop ICC profile first (CMYK output).');
+        const { generatePDFCmyk } = await import('./utils/pdfGeneratorCmyk');
+        await generatePDFCmyk(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet, iccProfile.bytes, iccProfile.name, renderIntent);
+      } else {
+        await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet);
+      }
     } catch (err) {
       setError(err.message || 'Error generating the PDF.');
     } finally {
@@ -223,6 +253,8 @@ export default function App() {
     cardType, setCardType, cardW, setCardW, cardH, setCardH, cropMarks, setCropMarks,
     cropStyle, setCropStyle, sheetUnit, setSheetUnit, sheetW, setSheetW, sheetH, setSheetH,
     customSheet, lowResCount,
+    colorMode, setColorMode, renderIntent, setRenderIntent,
+    iccProfile, onIccUpload: handleIccUpload, onIccClear: handleIccClear,
   };
   const previewProps = {
     images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop: cropMarks, cropStyle,
