@@ -571,6 +571,25 @@ input[type="number"]:focus {
 .icc-clear:hover { border-color: var(--danger); color: var(--danger); }
 .field-hint.icc-ok { color: var(--accent-light); }
 
+/* Slider compressione (qualità JPEG) */
+.range-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.range-value {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.field input[type="range"] {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .anim-check {
   cursor: pointer;
   position: relative;

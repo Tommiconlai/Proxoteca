@@ -35,7 +35,7 @@ export default function PageSettings({
     cardType, setCardType, cardW, setCardW, cardH, setCardH,
     cropMarks, setCropMarks, cropStyle, setCropStyle,
     sheetUnit, setSheetUnit, sheetW, setSheetW, sheetH, setSheetH, customSheet,
-    lowResCount = 0,
+    lowResCount = 0, quality = 0.85, setQuality,
     colorMode = 'rgb', setColorMode, renderIntent = 'relative', setRenderIntent,
     iccProfile = null, onIccUpload, onIccClear,
 }) {
@@ -200,6 +200,25 @@ export default function PageSettings({
                             <option key={v} value={v}>{v} DPI</option>
                         ))}
                     </SelectField>
+
+                    {/* Compressione JPEG dell'export RGB (non si applica al CMYK lossless) */}
+                    <div className="field">
+                        <div className="range-head">
+                            <span className="field-label">Compression</span>
+                            <span className="range-value">{Math.round(quality * 100)}% quality</span>
+                        </div>
+                        <input
+                            type="range" min="30" max="100" step="5"
+                            value={Math.round(quality * 100)}
+                            onChange={e => setQuality(parseInt(e.target.value, 10) / 100)}
+                            aria-label="JPEG quality (compression)"
+                        />
+                        <p className="field-hint">
+                            {colorMode === 'cmyk'
+                                ? 'Applies to RGB output only — CMYK export is lossless (FlateDecode).'
+                                : 'Lower quality = smaller PDF, more JPEG artifacts. 85% is a good default.'}
+                        </p>
+                    </div>
 
                     <div className="field">
                         <label className="checkbox-row">

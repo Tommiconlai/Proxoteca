@@ -310,7 +310,7 @@ function compressImage(img, cellWmm, cellHmm, dpi, bleedMm, bleedMode, quality =
 /**
  * Genera e scarica il PDF.
  */
-export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedStyle = 'auto', cardW = CARD_W, cardH = CARD_H, cropMarks = true, cropStyle = 'lines', customSheet = null) {
+export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedStyle = 'auto', cardW = CARD_W, cardH = CARD_H, cropMarks = true, cropStyle = 'lines', customSheet = null, quality = 0.85) {
   if (!items || items.length === 0) throw new Error('No images selected.');
 
   const { cols, rows, cellW, cellH, pageW, pageH, orientation, offsetX, offsetY } = getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet);
@@ -347,7 +347,7 @@ export async function generatePDF(items, formatKey, bleedMm, dpi = 600, bleedSty
       const item = items[imgIndex];
       const imgEl = await loadImageElement(item.file);
       const mode = resolveBleedMode(item.bleedMode, bleedStyle);
-      const jpeg = compressImage(imgEl, cellW, cellH, dpi, bleedMm, mode);
+      const jpeg = compressImage(imgEl, cellW, cellH, dpi, bleedMm, mode, quality);
       doc.addImage(jpeg, 'JPEG', x, y, cellW, cellH);
       if (cropMarks) {
         const limits = {

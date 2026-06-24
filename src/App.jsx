@@ -29,6 +29,9 @@ export default function App() {
   const [bleedMm, setBleedMm] = useState(() => readNum('ip:bleed', 2));
   const [bleedStyle, setBleedStyle] = useState(() => localStorage.getItem('ip:bleedStyle') || 'auto'); // auto | mirror | stretch | black
   const [dpi, setDpi] = useState(() => readNum('ip:dpi', 600));
+  // Qualità JPEG dell'export RGB (0.5–1.0). Più bassa = più compressione, file più piccolo.
+  // Non si applica al CMYK (FlateDecode lossless).
+  const [quality, setQuality] = useState(() => { const q = readNum('ip:quality', 0.85); return q >= 0.3 && q <= 1 ? q : 0.85; });
   const [cardType, setCardType] = useState(() => localStorage.getItem('ip:cardType') || 'mtg');
   const [cardW, setCardW] = useState(() => readNum('ip:cardW', 63) || 63);
   const [cardH, setCardH] = useState(() => readNum('ip:cardH', 88) || 88);
@@ -63,6 +66,7 @@ export default function App() {
     localStorage.setItem('ip:bleed', String(bleedMm));
     localStorage.setItem('ip:bleedStyle', bleedStyle);
     localStorage.setItem('ip:dpi', String(dpi));
+    localStorage.setItem('ip:quality', String(quality));
     localStorage.setItem('ip:cardType', cardType);
     localStorage.setItem('ip:cardW', String(cardW));
     localStorage.setItem('ip:cardH', String(cardH));
@@ -73,7 +77,7 @@ export default function App() {
     localStorage.setItem('ip:sheetH', String(sheetH));
     localStorage.setItem('ip:colorMode', colorMode);
     localStorage.setItem('ip:renderIntent', renderIntent);
-  }, [formatKey, bleedMm, bleedStyle, dpi, cardType, cardW, cardH, cropMarks, cropStyle, sheetUnit, sheetW, sheetH, colorMode, renderIntent]);
+  }, [formatKey, bleedMm, bleedStyle, dpi, quality, cardType, cardW, cardH, cropMarks, cropStyle, sheetUnit, sheetW, sheetH, colorMode, renderIntent]);
 
   // Revoca gli object URL residui allo smontaggio (evita leak di memoria).
   // imagesRef tiene il riferimento aggiornato senza ri-registrare l'effect.
@@ -224,7 +228,7 @@ export default function App() {
         const { generatePDFCmyk } = await import('./utils/pdfGeneratorCmyk');
         await generatePDFCmyk(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet, iccProfile.bytes, iccProfile.name, renderIntent);
       } else {
-        await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet);
+        await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet, quality);
       }
     } catch (err) {
       setError(err.message || 'Error generating the PDF.');
@@ -252,7 +256,7 @@ export default function App() {
     formatKey, setFormatKey, bleedMm, setBleedMm, bleedStyle, setBleedStyle, dpi, setDpi,
     cardType, setCardType, cardW, setCardW, cardH, setCardH, cropMarks, setCropMarks,
     cropStyle, setCropStyle, sheetUnit, setSheetUnit, sheetW, setSheetW, sheetH, setSheetH,
-    customSheet, lowResCount,
+    customSheet, lowResCount, quality, setQuality,
     colorMode, setColorMode, renderIntent, setRenderIntent,
     iccProfile, onIccUpload: handleIccUpload, onIccClear: handleIccClear,
   };
