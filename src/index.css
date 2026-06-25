@@ -1317,8 +1317,39 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .preview-card-hotspot:hover {
-  outline: 1.5px solid var(--danger);
+  outline: 1.5px solid var(--border-hover);
   outline-offset: -1px;
+}
+
+/* Superficie carta = button trasparente a tutta cella (cambia art, focus tastiera). */
+.card-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.card-surface:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* Carta selezionata (multi-selezione): velo + bordo oro. */
+.preview-card-hotspot.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.preview-card-hotspot.selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-dim);
+  pointer-events: none;
 }
 
 .preview-card-delete {
@@ -1389,6 +1420,66 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .preview-card-bleed:hover {
   background: var(--accent);
   color: #1f1606;
+}
+
+/* Solo screen-reader: testo accessibile non visivo (es. carta low-res, riepilogo foglio). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Barra azioni in blocco (compare nel footer del preview quando ci sono carte selezionate). */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bulk-bar .bulk-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.bulk-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-glass-hover);
+}
+
+.bulk-btn.bulk-del:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.bulk-btn.bulk-clear {
+  color: var(--text-secondary);
 }
 
 /* ============================================================

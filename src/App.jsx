@@ -191,6 +191,19 @@ export default function App() {
     it.id === id ? { ...it, bleedMode: nextBleedMode(it.bleedMode) } : it,
   ));
 
+  // Azioni in blocco sulla selezione (preview desktop): un solo setImages → un render.
+  const handleRemoveMany = (ids) => {
+    const set = new Set(ids);
+    setImages(prev => {
+      prev.forEach(i => { if (set.has(i.id)) URL.revokeObjectURL(i.preview); });
+      return prev.filter(i => !set.has(i.id));
+    });
+  };
+  const handleBleedMany = (ids) => {
+    const set = new Set(ids);
+    setImages(prev => prev.map(it => set.has(it.id) ? { ...it, bleedMode: nextBleedMode(it.bleedMode) } : it));
+  };
+
   // Duplica una carta (preview con object URL nuovo, inserita dopo l'originale).
   const handleDuplicate = (id) => setImages(prev => {
     const idx = prev.findIndex(i => i.id === id);
@@ -325,6 +338,7 @@ export default function App() {
     images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop: cropMarks, cropStyle,
     customSheet, onRemove: handleRemove, onChangeArt: setEditingId, onToggleBleed: handleToggleBleed,
     onDuplicate: handleDuplicate, isDragActive, missing, onAdd: open,
+    onRemoveMany: handleRemoveMany, onBleedMany: handleBleedMany,
   };
 
   // Ramo mobile: shell a tab + modali condivise (props reali arrivano in Tasks 2–4).

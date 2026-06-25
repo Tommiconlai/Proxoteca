@@ -192,7 +192,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
 }
 
 // ── Componente principale ─────────────────────────────────────
-export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing, onCardTap, onAdd }) {
+export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing, onCardTap, onAdd, onRemoveMany, onBleedMany }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
     const stageRef = useRef(null);
@@ -248,6 +248,44 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
     const canPrev = page > 0;
     const canNext = page < totalPages - 1;
 
+    // Selezione multipla (solo desktop = !onCardTap): ctrl/cmd/shift-click marca le carte,
+    // poi azioni in blocco. Click semplice resta "cambia art" → i novizi non se ne accorgono.
+    const [selected, setSelected] = useState(() => new Set());
+    const selectMode = !onCardTap;
+    // Tieni solo gli id ancora esistenti (carte cancellate / pagina cambiata).
+    const selectedIds = useMemo(
+        () => images.filter(i => selected.has(i.id)).map(i => i.id),
+        [images, selected],
+    );
+    const clearSel = () => setSelected(new Set());
+    const toggleSel = (id) => setSelected(prev => {
+        const n = new Set(prev);
+        n.has(id) ? n.delete(id) : n.add(id);
+        return n;
+    });
+    const handleCardClick = (e, id) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey) { e.preventDefault(); toggleSel(id); }
+        else onChangeArt(id);
+    };
+
+    // Scorciatoie: Del = elimina selezione, Esc = deseleziona, Ctrl/Cmd+A = seleziona tutto.
+    useEffect(() => {
+        if (!selectMode) return;
+        const onKey = (e) => {
+            const t = e.target;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selected.size) {
+                e.preventDefault(); onRemoveMany?.(selectedIds); clearSel();
+            } else if (e.key === 'Escape' && selected.size) {
+                clearSel();
+            } else if ((e.key === 'a' || e.key === 'A') && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault(); setSelected(new Set(images.map(i => i.id)));
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [selectMode, selected, selectedIds, images, onRemoveMany]);
+
     return (
         <div className={`preview-root${isDragActive ? ' drag-active' : ''}`}>
             <div className="preview-stage" ref={stageRef}>
@@ -278,6 +316,11 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                         </div>
                     )}
                     {images.length > 0 && (
+                        <p className="sr-only" aria-live="polite">
+                            Print sheet preview: {images.length} card{images.length !== 1 ? 's' : ''} placed, page {page + 1} of {totalPages}.
+                        </p>
+                    )}
+                    {images.length > 0 && (
                         <div className="preview-card-layer">
                             {Array.from({ length: info.perPage }, (_, i) => {
                                 const img = images[page * perPage + i];
@@ -286,21 +329,32 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                 const row = Math.floor(i / info.cols);
                                 const left = (info.offsetX + col * info.cellW + bleedMm) * scale;
                                 const top = (info.offsetY + row * info.cellH + bleedMm) * scale;
+                                const name = (img.file?.name || `Card ${page * perPage + i + 1}`).replace(/\.[^.]+$/, '');
+                                const lowRes = img.w && img.w < dpi * 0.5 * (cardW / 25.4);
+                                const isSel = selected.has(img.id);
                                 return (
                                     <div
                                         key={img.id}
-                                        className="preview-card-hotspot"
-                                        style={{
-                                            left,
-                                            top,
-                                            width: cardW * scale,
-                                            height: cardH * scale,
-                                            cursor: 'pointer',
-                                        }}
-                                        onClick={() => (onCardTap ? onCardTap(img.id) : onChangeArt(img.id))}
-                                        title={onCardTap ? 'Edit card' : 'Change art'}
+                                        className={`preview-card-hotspot${isSel ? ' selected' : ''}`}
+                                        style={{ left, top, width: cardW * scale, height: cardH * scale }}
                                     >
-                                        {!onCardTap && (<>
+                                        {/* Superficie carta = button a tutta area → "cambia art" raggiungibile da tastiera. */}
+                                        {onCardTap ? (
+                                            <button
+                                                type="button"
+                                                className="card-surface"
+                                                onClick={() => onCardTap(img.id)}
+                                                aria-label={`Edit ${name}`}
+                                            />
+                                        ) : (<>
+                                        <button
+                                            type="button"
+                                            className="card-surface"
+                                            onClick={(e) => handleCardClick(e, img.id)}
+                                            title="Change art — Ctrl-click to select"
+                                            aria-label={`${name}. Change art. Ctrl or Shift click to select.`}
+                                            aria-pressed={isSel || undefined}
+                                        />
                                         <button
                                             type="button"
                                             className="preview-card-dup"
@@ -329,6 +383,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                         >
                                             <IconX size={12} />
                                         </button>
+                                        {lowRes && <span className="sr-only">Low resolution for {dpi} DPI — may print soft.</span>}
                                         </>)}
                                     </div>
                                 );
@@ -339,28 +394,41 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
             </div>
 
             <div className="preview-footer">
-                {totalPages > 1 && (
-                    <div className="preview-nav">
-                        <button
-                            className="nav-btn"
-                            disabled={!canPrev}
-                            onClick={() => setPageOffset(page - 1)}
-                            aria-label="Previous page"
-                        >‹</button>
-                        <span className="nav-info">{page + 1}/{totalPages}</span>
-                        <button
-                            className="nav-btn"
-                            disabled={!canNext}
-                            onClick={() => setPageOffset(page + 1)}
-                            aria-label="Next page"
-                        >›</button>
+                {selectMode && selectedIds.length > 0 ? (
+                    <div className="bulk-bar" role="toolbar" aria-label="Selected cards">
+                        <span className="bulk-count">{selectedIds.length} selected</span>
+                        <button type="button" className="bulk-btn" onClick={() => onBleedMany?.(selectedIds)}>
+                            <IconFrame size={13} /> Bleed
+                        </button>
+                        <button type="button" className="bulk-btn bulk-del" onClick={() => { onRemoveMany?.(selectedIds); clearSel(); }}>
+                            <IconX size={13} /> Delete
+                        </button>
+                        <button type="button" className="bulk-btn bulk-clear" onClick={clearSel}>Clear</button>
                     </div>
-                )}
-                {images.length > 0 && (
-                    <span className="preview-count">
-                        {images.length} img{missing > 0 ? ` · ${missing} to fill the page` : ''}
-                    </span>
-                )}
+                ) : (<>
+                    {totalPages > 1 && (
+                        <div className="preview-nav">
+                            <button
+                                className="nav-btn"
+                                disabled={!canPrev}
+                                onClick={() => setPageOffset(page - 1)}
+                                aria-label="Previous page"
+                            >‹</button>
+                            <span className="nav-info">{page + 1}/{totalPages}</span>
+                            <button
+                                className="nav-btn"
+                                disabled={!canNext}
+                                onClick={() => setPageOffset(page + 1)}
+                                aria-label="Next page"
+                            >›</button>
+                        </div>
+                    )}
+                    {images.length > 0 && (
+                        <span className="preview-count">
+                            {images.length} img{missing > 0 ? ` · ${missing} to fill the page` : ''}
+                        </span>
+                    )}
+                </>)}
             </div>
         </div>
     );
