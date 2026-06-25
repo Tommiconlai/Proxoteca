@@ -103,7 +103,10 @@ export default function PageSettings({
                                     </label>
                                 </div>
                                 {customSheet && (customSheet[0] < cardW || customSheet[1] < cardH) && (
-                                    <p className="field-hint field-hint-warn">Sheet smaller than the {cardW}×{cardH} mm card — no cards will fit.</p>
+                                    <div className="lowres-warn">
+                                        <span className="lowres-mark" aria-hidden="true">!</span>
+                                        <span>Sheet smaller than the {cardW}×{cardH}&nbsp;mm card — no cards will fit. Increase the sheet, or reduce the card size.</span>
+                                    </div>
                                 )}
                             </>
                         )}
