@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
 import { getGridInfo, cropMarkSpan, drawCardWithBleed, resolveBleedMode, bleedLabel } from '../utils/pdfGenerator';
-import { IconX, IconCopy, IconFrame } from './icons';
+import { IconX, IconCopy, IconFrame, IconPlus } from './icons';
 
 // ── Carica un'immagine come HTMLImageElement (async) ─────────
 function loadImage(src) {
@@ -192,7 +192,7 @@ export function PageCanvas({ pageImages, formatKey, bleedMm, bleedStyle, dpi, ca
 }
 
 // ── Componente principale ─────────────────────────────────────
-export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing, onCardTap }) {
+export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop, cropStyle, customSheet, onRemove, onChangeArt, onToggleBleed, onDuplicate, isDragActive, missing, onCardTap, onAdd }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
     const stageRef = useRef(null);
@@ -266,6 +266,17 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                         previewW={pageW}
                         empty={images.length === 0}
                     />
+                    {images.length === 0 && !isDragActive && (
+                        <div className="preview-empty-cta">
+                            <p className="empty-cta-title">No cards yet</p>
+                            <p className="empty-cta-sub">Drop card images here, or import from Scryfall / MPCFill.</p>
+                            {onAdd && (
+                                <button type="button" className="btn-add empty-cta-btn" onClick={onAdd}>
+                                    <IconPlus size={18} /> Add cards
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {images.length > 0 && (
                         <div className="preview-card-layer">
                             {Array.from({ length: info.perPage }, (_, i) => {
@@ -347,7 +358,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                 )}
                 {images.length > 0 && (
                     <span className="preview-count">
-                        {images.length} img{missing > 0 ? ` · ${missing} missing` : ''}
+                        {images.length} img{missing > 0 ? ` · ${missing} to fill the page` : ''}
                     </span>
                 )}
             </div>

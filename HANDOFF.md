@@ -95,7 +95,19 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Save-list feedback toast (most recent):** "Save list" gave feedback only via the old `notice` box (desktop
+- **UX critique fixes — empty-state CTA + "missing" copy (most recent):** from an impeccable `critique`
+  (29/40, "Good"). Two P1s: (1) the placed/empty footer said **"N missing"** for empty grid slots — overloaded
+  with the real "unresolved card" badge and read as data loss. `PagePreview` footer now says **"N to fill the
+  page"** (matches the mobile `export-summary` copy; the `missing` var = empty slots on the current page, see
+  [App.jsx](src/App.jsx) `missing`). (2) the empty preview was a bare white canvas with no guidance — added a
+  centered **`.preview-empty-cta`** overlay ("No cards yet" + drop/import hint + an **Add cards** button) over the
+  sheet, shown when `images.length===0 && !isDragActive`. Wired a new `onAdd` prop into `previewProps`: desktop =
+  react-dropzone `open()`, mobile = open the add sheet (`setAddOpen(true)`). Button reuses `.btn-add` (green) with
+  `width:auto` since the sidebar one is full-width. Also fixed a **leftover Italian string**: the drag overlay
+  `.preview-root.drag-active::after` said "Rilascia le immagini qui" → **"Drop images here"**. Verified live
+  (desktop + 375px): empty CTA centered/sized, footer reads "to fill the page", build + lint green. (The 2
+  `gradient-text` detector hits are the deliberate "Proxoteca" wordmark — left as brand.)
+- **Save-list feedback toast:** "Save list" gave feedback only via the old `notice` box (desktop
   sidebar / Export page) — invisible from the mobile Cards bar. Replaced `notice` with a global **`Toast`**
   (`{kind,msg}` state, auto-dismiss 3.5 s, tap-to-close, `aria-live`), rendered in both App trees, centered above
   the mobile action bar. `handleSaveProject` now emits success/error toasts (the only `notice` user; `error` stays

@@ -1253,7 +1253,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* Overlay drag & drop su tutta l'area preview */
 .preview-root.drag-active::after {
-  content: 'Rilascia le immagini qui';
+  content: 'Drop images here';
   position: absolute;
   inset: 0;
   border: 2px dashed var(--accent);
@@ -1267,6 +1267,41 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 1.05rem;
   pointer-events: none;
   z-index: 5;
+}
+
+/* Stato vuoto: invito centrato sopra il foglio bianco (insegna l'azione). */
+.preview-empty-cta {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  pointer-events: none; /* il drop sull'area resta gestito dal root dropzone */
+  z-index: 4;
+}
+
+.preview-empty-cta .empty-cta-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2a2d36; /* testo scuro: il foglio sotto è bianco */
+}
+
+.preview-empty-cta .empty-cta-sub {
+  font-size: 0.85rem;
+  max-width: 30ch;
+  line-height: 1.5;
+  color: #5b6070;
+}
+
+.preview-empty-cta .empty-cta-btn {
+  pointer-events: auto;
+  width: auto; /* il .btn-add della sidebar è full-width: qui no */
+  margin-top: 8px;
 }
 
 /* ── Overlay elimina su ogni carta (hover: bordo rosso + × angolo) ── */

@@ -324,7 +324,7 @@ export default function App() {
   const previewProps = {
     images, formatKey, bleedMm, bleedStyle, dpi, cardW, cardH, showCrop: cropMarks, cropStyle,
     customSheet, onRemove: handleRemove, onChangeArt: setEditingId, onToggleBleed: handleToggleBleed,
-    onDuplicate: handleDuplicate, isDragActive, missing,
+    onDuplicate: handleDuplicate, isDragActive, missing, onAdd: open,
   };
 
   // Ramo mobile: shell a tab + modali condivise (props reali arrivano in Tasks 2–4).
