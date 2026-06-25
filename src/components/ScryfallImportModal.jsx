@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { parseCardList, fetchScryfallImages, fetchDeckList } from '../utils/scryfall';
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss';
 import { IconX } from './icons';
 
 export default function ScryfallImportModal({ open, onClose, onImport }) {
@@ -11,9 +12,11 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
     const [result, setResult] = useState(null); // { imported, notFound }
     const [error, setError] = useState(null);
 
-    if (!open) return null;
-
+    // Esc chiude (ma non durante un import/caricamento) + focus dentro al modale.
     const close = () => { if (!busy && !loadingLink) onClose(); };
+    const dismissRef = useOverlayDismiss(close, open);
+
+    if (!open) return null;
 
     // Carica una lista da un link deck nella textarea (poi import normale).
     const handleLoadLink = async () => {
@@ -55,7 +58,7 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
 
     return (
         <div className="modal-overlay" onClick={close}>
-            <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Import from Scryfall">
+            <div className="modal" ref={dismissRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Import from Scryfall">
                 <div className="modal-header">
                     <h2>Import from Scryfall</h2>
                     <button className="modal-close" onClick={close} aria-label="Close" disabled={busy}>

@@ -123,13 +123,15 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [images.length]);
 
-  // Chiude il tooltip "?" al click fuori
+  // Chiude il tooltip "?" al click fuori o con Esc
   const helpRef = useRef(null);
   useEffect(() => {
     if (!helpOpen) return;
     const onDoc = (e) => { if (helpRef.current && !helpRef.current.contains(e.target)) setHelpOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setHelpOpen(false); };
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
   }, [helpOpen]);
 
   // Crea gli item immagine. entries: [{file, bleedMode}].
@@ -411,7 +413,7 @@ export default function App() {
         <h1>Proxoteca</h1>
         <div className={`help${helpOpen ? ' open' : ''}`} ref={helpRef}>
           <button type="button" className="help-btn" aria-label="How it works"
-            aria-haspopup="dialog" aria-expanded={helpOpen}
+            aria-expanded={helpOpen}
             onClick={() => setHelpOpen((o) => !o)}>?</button>
           <div className="help-tooltip" role="tooltip">
             <strong>How it works</strong>

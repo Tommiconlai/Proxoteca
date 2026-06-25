@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { parseMpcXml, fetchMpcImages } from '../utils/mpcfill';
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss';
 import { IconX } from './icons';
 
 // Import da un file XML di MPCFill: seleziona il file → scarica le immagini.
@@ -11,9 +12,10 @@ export default function MpcImportModal({ open, onClose, onImport }) {
     const [result, setResult] = useState(null);  // { imported, notFound }
     const [error, setError] = useState(null);
 
-    if (!open) return null;
-
     const close = () => { if (!busy) onClose(); };
+    const dismissRef = useOverlayDismiss(close, open); // Esc chiude (non durante l'import) + focus
+
+    if (!open) return null;
 
     const onFile = async (e) => {
         const f = e.target.files?.[0];
@@ -45,7 +47,7 @@ export default function MpcImportModal({ open, onClose, onImport }) {
 
     return (
         <div className="modal-overlay" onClick={close}>
-            <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Import from MPCFill">
+            <div className="modal" ref={dismissRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Import from MPCFill">
                 <div className="modal-header">
                     <h2>Import from MPCFill</h2>
                     <button className="modal-close" onClick={close} aria-label="Close" disabled={busy}>

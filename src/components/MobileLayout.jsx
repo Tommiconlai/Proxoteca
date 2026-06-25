@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Logo, IconFile, IconDownload, IconList, IconTrash, IconPlus, IconImage, IconX } from './icons';
 import PageSettings from './PageSettings';
 import PagePreview from './PagePreview';
 import CardActionSheet from './CardActionSheet';
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss';
 
 // Icona "sliders" per Settings (inline; stesso stile della vecchia tab bar).
 function IconSliders({ size = 22 }) {
@@ -17,8 +18,9 @@ function IconSliders({ size = 22 }) {
 // Pagina overlay full-screen (Settings / Export): si apre dal basso, header + chiudi.
 // Sostituisce le vecchie tab: Settings/Export ora aprono una "pagina", come l'add-sheet.
 function MobilePage({ title, onClose, children }) {
+  const dismissRef = useOverlayDismiss(onClose); // Esc chiude + focus nella pagina
   return (
-    <div className="mobile-page" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="mobile-page" ref={dismissRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title}>
       <header className="mobile-page-header">
         <h2>{title}</h2>
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
@@ -33,6 +35,15 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
   const [sel, setSel] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [page, setPage] = useState(null); // null | 'settings' | 'export'
+
+  // Esc chiude i due overlay inline (add-sheet, tooltip ?). Gli altri (CardActionSheet,
+  // MobilePage) hanno il loro useOverlayDismiss.
+  useEffect(() => {
+    if (!addOpen && !helpOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { setAddOpen(false); setHelpOpen(false); } };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [addOpen, helpOpen]);
 
   return (
     <div className="mobile">

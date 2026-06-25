@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchPrints, downloadAsFile } from '../utils/scryfall';
+import { useOverlayDismiss } from '../hooks/useOverlayDismiss';
 import { IconX } from './icons';
 
 // Box "cambia art": clic su una carta -> tutte le stampe Scryfall -> sostituisci.
@@ -9,6 +10,8 @@ export default function ArtPickerModal({ card, onClose, onPick }) {
     const [prints, setPrints] = useState(null); // null = caricamento, [] = nessuna
     const [error, setError] = useState(null);
     const [picking, setPicking] = useState(false);
+    // Esc chiude (ma non durante il download della stampa scelta) + focus nel modale.
+    const dismissRef = useOverlayDismiss(() => { if (!picking) onClose(); });
 
     useEffect(() => {
         let alive = true;
@@ -29,7 +32,7 @@ export default function ArtPickerModal({ card, onClose, onPick }) {
 
     return (
         <div className="modal-overlay" onClick={picking ? undefined : onClose}>
-            <div className="modal modal-art" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Change art: ${name}`}>
+            <div className="modal modal-art" ref={dismissRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Change art: ${name}`}>
                 <div className="modal-header">
                     <h2>Change art — {name}</h2>
                     <button className="modal-close" onClick={onClose} aria-label="Close" disabled={picking}>
