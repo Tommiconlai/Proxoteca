@@ -283,6 +283,15 @@ h3 {
   color: var(--text-secondary); /* era --text-muted: <4.5:1 a 11px, falliva AA */
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  /* Resta ancorata in cima scrollando: non si perde di vista il gruppo corrente.
+     Sfondo a tutta larghezza (annulla il padding 20px del contenitore) per coprire
+     il contenuto che ci scorre sotto. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-surface);
+  margin: -8px -20px 0;
+  padding: 8px 20px;
 }
 
 /* Controlli raggruppati in una card: label-sopra compatta, righe ravvicinate. */
@@ -1237,6 +1246,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 .toast-success { border-color: rgba(46, 204, 113, 0.5); }
 .toast-error { border-color: var(--danger); }
+
+/* Badge icona: distingue successo/errore a colpo d'occhio (non solo dal bordo). */
+.toast-ic {
+  flex: none;
+  width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-size: 0.72rem; font-weight: 800; line-height: 1;
+}
+.toast-success .toast-ic { background: rgba(46, 204, 113, 0.18); color: #2ecc71; }
+.toast-error .toast-ic { background: rgba(239, 68, 68, 0.18); color: var(--danger); }
 
 /* Azione opzionale nel toast (es. Undo dopo una rimozione). */
 .toast-action {

@@ -57,6 +57,7 @@ before restarting.
 | `src/components/ConfirmDialog.jsx` | Themed confirm for destructive actions (reuses `.modal`; `.modal.modal-confirm` overrides the mobile full-screen modal so it stays small/centered). Driven by App's `confirm` state `{message,confirmLabel,onConfirm}`; rendered in both App trees. Used by `handleClearAll` ("Delete all") |
 | `src/components/CookieBanner.jsx` | Cookie-consent banner (fixed bottom, centered, matches the modal surface/shadow). Self-contained: shows until the user chooses, persists `ip:cookieConsent` = `accepted`\|`declined` in localStorage. **Settings always live in localStorage (technical)**; this flag only gates any *future* analytics cookies (read the flag before loading them — none today). Rendered once in each App tree (desktop + mobile); on mobile it sits above the bottom-tab bar. Centered via `left:0;right:0;margin-inline:auto` (not `translateX`, which the `fade-up` animation would override) |
 | `src/hooks/useIsMobile.js` | `matchMedia('(max-width: 768px)')` via `useSyncExternalStore` → boolean. App renders the desktop tree above 768px, `MobileLayout` at/below |
+| `src/hooks/useOverlayDismiss.js` | Shared overlay a11y: `useOverlayDismiss(onClose, active=true, {focusContainer=true})` → a `ref`. Esc-to-close (document keydown), moves focus into the overlay container on open, restores to the trigger on close. `active` lets always-mounted modals (`if(!open) return null`) gate it; `focusContainer:false` keeps an internal `autoFocus` (ConfirmDialog→Cancel). Used by every modal/sheet/dialog. **No full focus-trap on Tab** (deliberate, `ponytail:` note in-file) |
 | `src/components/MobileLayout.jsx` | Mobile shell (≤768px): compact header (Logo + `?` tap-tooltip) + the always-on **Cards** view (`PagePreview`; `onCardTap` → `CardActionSheet`). **No tab bar** (removed `BottomTabBar`). Bottom **action bar** `.cards-toolbar` (`space-between`): **Settings** nav (left, icon+label) · `.ct-cluster` [Delete all · ＋ Add (FAB, primary) · Save list] · **Export** nav (right). ＋ opens the add bottom-sheet; **Settings/Export open a full-screen `MobilePage` overlay** (slide-up, header + close): Settings = `PageSettings`, Export = count/missing + low-res warn + Generate PDF (Save/Delete moved to the bar). Presentational; consumes `settingsProps`/`previewProps`/`actions`/`addMenu`. Local state: addOpen, sel, helpOpen, page(`null`/`settings`/`export`). Inline `IconSliders` + `MobilePage` helpers |
 | `src/components/CardActionSheet.jsx` | Mobile bottom sheet for a tapped card: Change art · Duplicate · **Bleed: <mode>** (cycles none/generated/in-art, sheet stays open) · Remove. Bleed label via `bleedLabel` (pdfGenerator) |
 | `src/utils/iccProfiles.js` | **Bundled ICC registry.** `BUNDLED_PROFILES` (id/label/`?url`/`condition`/`info`) for the 3 ECI output profiles in `src/assets/icc/` (FOGRA39 default, FOGRA51, FOGRA52) + `DEFAULT_PROFILE_ID`/`UPLOAD_ID`/`getProfileMeta`/`loadBundledProfileBytes` (fetch+cache on demand). `info` = exact lcms description (drives OutputIntent Info + mismatch compare) |
@@ -95,7 +96,38 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Fourth critique → regressions + push for Excellent (most recent):** fourth multi-agent `critique` scored
+- **Fifth critique → full 4-batch sweep (most recent):** a fresh multi-agent `/impeccable critique` (6 isolated
+  lenses + adversarial verify of every finding; **41 raw → 29 confirmed, 12 refuted**) scored **30/40** "Good"
+  and is the **first persisted snapshot** (`.impeccable/critique/2026-06-25T13-02-03Z__src-app-jsx.md`; earlier
+  HANDOFF critiques were never saved to `.impeccable/`, so the score isn't directly comparable). Detector clean
+  on JSX; live contrast sweep all-pass. User chose **all 29, P1-first, CMYK = keep power + add glosses.** All four
+  batches shipped, live-verified, lint + build green:
+  - **Batch 1 — a11y (P1):** new **`src/hooks/useOverlayDismiss.js`** (Esc-to-close + focus-into-overlay on open +
+    restore-to-trigger on close) wired into **every** overlay: Scryfall/MPC/ArtPicker modals, ConfirmDialog,
+    CardActionSheet, mobile MobilePage (Settings/Export), mobile add-sheet + help popover, desktop help tooltip.
+    Plus: ConfirmDialog `autoFocus` moved off the destructive button → **Cancel**; help button's
+    `aria-haspopup="dialog"` dropped (mismatch with `role="tooltip"`). (Modals with `if(!open) return null` pass
+    the open flag as the hook's `active` arg — hooks can't run after the early return.)
+  - **Batch 2 — export + CMYK copy (P1):** `generatePDF` + `buildCmykPdfBytes` take `onProgress(done,total)` +
+    an `AbortSignal`; both loops report per-card progress and bail cooperatively (typed `AbortError`). App +
+    MobileLayout show a **determinate bar (`.gen-bar`/`.gen-bar-fill`, scaleX not width) + "Cancel export"**;
+    abort → neutral "Export canceled." toast. CMYK copy (kept all controls, added plain glosses): actionable ICC
+    error pointing to the sidebar control + naming Coated FOGRA39; **BPC decoded** (Black Point Compensation);
+    intents differentiated + default marked; ICC-upload hint (where to get a profile); profile-mismatch warning
+    rewritten plain; DPI/low-res hints explain the half-the-pixels threshold (~745px @300DPI).
+  - **Batch 3 — P2:** per-card bleed button now shows the **resolved** bleed (`resolveBleedMode(mode, bleedStyle)`)
+    so the label matches what prints (desktop + mobile CardActionSheet, which now gets `bleedStyle`); Scryfall
+    import with **0 imported + some not-found → error** (was a green "✓ 0 imported"); not-found lists cap at 8
+    (+N more) and scroll (Scryfall + MPC); mobile help tooltip = centered fixed panel + max-height scroll + close
+    ✕; mobile bottom cluster got visible **Delete / Add / Save** micro-labels; duplicate→delete **object-URL leak**
+    fixed (`pendingRevokesRef` Set flushed on unmount).
+  - **Batch 4 — P3:** `.sidebar-section h2` is **sticky** (full-width bg via `margin/padding -20px`, no overflow);
+    **Toast** got a semantic ✓/! badge (`.toast-ic`, color by kind); mm↔inch conversion bumped to 3/2-decimal
+    precision so repeated toggles don't drift.
+  - **Still open** (not in this sweep): full focus-**trap** on Tab inside modals (Esc + focus-in/restore done;
+    `ponytail:` note in the hook); a CORS-proxy retry for deck links; Acrobat preflight (user-side, doc §7).
+    The 2 detector gradient-text hits remain the deliberate **"Proxoteca" wordmark** (brand, not slop).
+- **Fourth critique → regressions + push for Excellent:** fourth multi-agent `critique` scored
   **34/40** (up from 33; #5 + #10 reached a genuine 4). It found 3 regressions from the previous batch + the
   loudest pre-existing P2s. All 6 fixed + live-verified; lint + build green; console clean.
   - **Regression: mobile error box lost the dismiss ×** (added to desktop only). Threaded `onClearError`

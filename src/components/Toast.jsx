@@ -7,6 +7,7 @@ export default function Toast({ toast, onClose }) {
   if (!toast) return null;
   return (
     <div className={`toast toast-${toast.kind || 'success'}`} role="status" aria-live="polite" onClick={onClose}>
+      <span className="toast-ic" aria-hidden="true">{toast.kind === 'error' ? '!' : '✓'}</span>
       <span>{toast.msg}</span>
       {toast.action && (
         <button

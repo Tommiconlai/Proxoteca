@@ -59,9 +59,11 @@ export default function PageSettings({
     };
 
     // Cambio unità foglio: converte i valori mostrati (mm↔inch) mantenendo la misura.
+    // Alta precisione (in: 3 decimali, mm: 2) così avanti-e-indietro non fa derivare
+    // la dimensione di frazioni di mm a ogni toggle.
     const onUnitChange = (u) => {
         if (u === sheetUnit) return;
-        const conv = (v) => (u === 'in' ? Math.round((v / 25.4) * 100) / 100 : Math.round(v * 25.4 * 10) / 10);
+        const conv = (v) => (u === 'in' ? Math.round((v / 25.4) * 1000) / 1000 : Math.round(v * 25.4 * 100) / 100);
         setSheetW(conv(sheetW));
         setSheetH(conv(sheetH));
         setSheetUnit(u);
