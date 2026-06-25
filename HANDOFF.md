@@ -95,7 +95,23 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Re-critique P2 backlog — 8 fixes (most recent):** cleared the deferred P2s from the re-`critique`. All
+- **Re-critique P3 polish — 5 fixes (most recent):** all live-verified, lint + build green.
+  - **Refresh-loss guard** ([App.jsx](src/App.jsx)): a `beforeunload` listener (only while `images.length>0`)
+    fires the browser's native "leave site?" prompt — images aren't persisted (blobs revoked on unmount), so a
+    reload no longer silently drops a layout. Verified: `beforeunload` event is `defaultPrevented` with cards present.
+  - **Keyboard skip-link** ([PagePreview.jsx](src/components/PagePreview.jsx)): the desktop grid is 4 tab-stops
+    per card; a `.skip-cards-link` (hidden until `:focus-visible`, top-left of the preview) focuses the footer
+    (`footerRef`, `tabIndex={-1}`) so keyboard users jump past the grid. Verified: activating it moves focus to
+    `.preview-footer`.
+  - **Friendlier count copy**: "N img · N to fill the page" → **"N cards · add N to fill this page"** (matches the
+    sr-only summary's "card(s)" wording).
+  - **`Clear` is now a ghost button** (transparent border/bg, muted → primary on hover) so it reads as a tertiary
+    "dismiss" vs the bordered Bleed/Delete pills.
+  - **`.bulk-btn:active`** press feedback (translateY) to match `.btn-add`/`.btn-generate`.
+  - **Deliberately skipped** (confirmed P3, low value / risk): mobile cluster labels (would crowd the centered FAB
+    cluster; a11y already covered by aria-labels + help) and the low-res SR/canvas measurement race (self-healing,
+    transient). **Still deferred as features** (not polish): drag-reorder, mobile batch ops.
+- **Re-critique P2 backlog — 8 fixes:** cleared the deferred P2s from the re-`critique`. All
   live-verified + an independent reviewer pass found no bugs; lint + build green.
   - **Generate-PDF success toast** ([App.jsx](src/App.jsx) `handleGenerate`): the primary export was silent;
     now emits `{kind:'success', msg:'PDF ready — check your downloads.'}` (Toast infra already existed).

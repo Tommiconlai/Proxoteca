@@ -113,6 +113,15 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Le immagini NON sono persistite (blob revocati allo unmount): avvisa prima di
+  // ricaricare/chiudere se c'è un lavoro in corso, così non si perde un'impaginazione.
+  useEffect(() => {
+    if (images.length === 0) return;
+    const onBeforeUnload = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [images.length]);
+
   // Chiude il tooltip "?" al click fuori
   const helpRef = useRef(null);
   useEffect(() => {

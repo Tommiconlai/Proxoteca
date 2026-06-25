@@ -1498,14 +1498,54 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: var(--bg-glass-hover);
 }
 
+/* Feedback alla pressione, come gli altri bottoni del sistema (.btn-add/.btn-generate). */
+.bulk-btn:active {
+  transform: translateY(1px);
+  background: var(--bg-elevated);
+}
+
 .bulk-btn.bulk-del:hover {
   border-color: rgba(239, 68, 68, 0.5);
   background: rgba(239, 68, 68, 0.12);
   color: #fca5a5;
 }
 
+/* Clear = affordance "scarta" terziaria: ghost (niente bordo/sfondo), distinta dai
+   due pulsanti-pillola Bleed/Delete così la differenza legge come gerarchia voluta. */
 .bulk-btn.bulk-clear {
+  border-color: transparent;
+  background: transparent;
   color: var(--text-secondary);
+}
+.bulk-btn.bulk-clear:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* Skip-link: invisibile finché non riceve focus da tastiera, poi pillola in alto a sx. */
+.skip-cards-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--accent-light);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transform: translateY(-150%);
+  opacity: 0;
+  pointer-events: none;
+}
+.skip-cards-link:focus-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* ============================================================

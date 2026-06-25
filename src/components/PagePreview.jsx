@@ -196,6 +196,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
     const [pageOffset, setPageOffset] = useState(0);
     const [box, setBox] = useState({ w: 0, h: 0 });
     const stageRef = useRef(null);
+    const footerRef = useRef(null); // bersaglio dello skip-link (salta la griglia carte da tastiera)
 
     const info = useMemo(() => getGridInfo(formatKey, bleedMm, cardW, cardH, customSheet), [formatKey, bleedMm, cardW, cardH, customSheet]);
     const perPage = Math.max(1, info.perPage);
@@ -298,6 +299,14 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
 
     return (
         <div className={`preview-root${isDragActive ? ' drag-active' : ''}`}>
+            {/* Skip-link tastiera: la griglia desktop ha 4 stop-tab per carta; questo salta al footer. */}
+            {selectMode && images.length > 0 && (
+                <button
+                    type="button"
+                    className="skip-cards-link"
+                    onClick={() => footerRef.current?.focus()}
+                >Skip cards</button>
+            )}
             <div className="preview-stage" ref={stageRef}>
                 <div className="preview-page-wrap" style={{ width: pageW }}>
                     <PageCanvas
@@ -417,7 +426,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                 </div>
             </div>
 
-            <div className="preview-footer">
+            <div className="preview-footer" ref={footerRef} tabIndex={-1}>
                 {/* La bulk-bar è una RIGA a sé: il pager resta sempre visibile (niente trappola
                     sulla pagina corrente quando c'è una selezione su un foglio multi-pagina). */}
                 {selectMode && selectedIds.length > 0 && (
@@ -451,7 +460,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                 )}
                 {images.length > 0 && !(selectMode && selectedIds.length > 0) && (
                     <span className="preview-count">
-                        {images.length} img{missing > 0 ? ` · ${missing} to fill the page` : ''}
+                        {images.length} card{images.length !== 1 ? 's' : ''}{missing > 0 ? ` · add ${missing} to fill this page` : ''}
                     </span>
                 )}
                 {/* Suggerimento discreto: rende scopribile la multi-selezione (altrimenti solo hover/aria). */}
