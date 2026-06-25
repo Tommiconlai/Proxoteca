@@ -89,7 +89,8 @@ export default function MpcImportModal({ open, onClose, onImport }) {
                         <div>✓ {result.imported} image{result.imported !== 1 ? 's' : ''} imported</div>
                         {result.notFound.length > 0 && (
                             <div className="import-notfound">
-                                ✗ {result.notFound.length} failed: {result.notFound.join(', ')}
+                                ✗ {result.notFound.length} failed: {result.notFound.slice(0, 8).join(', ')}
+                                {result.notFound.length > 8 ? `, +${result.notFound.length - 8} more` : ''}
                             </div>
                         )}
                     </div>

@@ -48,7 +48,13 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
                 (done, total) => setProgress({ done, total }),
             );
             if (files.length) onImport(files);
-            setResult({ imported: files.length, notFound });
+            // 0 importate ma con "non trovate" = fallimento totale: mostra un errore,
+            // non il riquadro "✓ 0 imported" (che leggerebbe come successo).
+            if (!files.length && notFound.length) {
+                setError(`None of the ${notFound.length} card${notFound.length > 1 ? 's were' : ' was'} found — check the spelling, or the (SET) number.`);
+            } else {
+                setResult({ imported: files.length, notFound });
+            }
         } catch (e) {
             setError(e.message || 'Error during import.');
         } finally {
@@ -115,10 +121,11 @@ export default function ScryfallImportModal({ open, onClose, onImport }) {
 
                 {result && (
                     <div className="import-result">
-                        <div>✓ {result.imported} images imported</div>
+                        <div>✓ {result.imported} image{result.imported !== 1 ? 's' : ''} imported</div>
                         {result.notFound.length > 0 && (
                             <div className="import-notfound">
-                                ✗ {result.notFound.length} not found: {result.notFound.join(', ')}
+                                ✗ {result.notFound.length} not found: {result.notFound.slice(0, 8).join(', ')}
+                                {result.notFound.length > 8 ? `, +${result.notFound.length - 8} more` : ''}
                             </div>
                         )}
                     </div>

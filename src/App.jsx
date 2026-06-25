@@ -95,8 +95,12 @@ export default function App() {
   // imagesRef tiene il riferimento aggiornato senza ri-registrare l'effect.
   const imagesRef = useRef(images);
   imagesRef.current = images;
+  // URL di carte rimosse con revoke DIFFERITO (finestra Undo): se l'utente chiude/
+  // ricarica entro i 5.3s, il timer non scatta → vanno revocati anche questi allo unmount.
+  const pendingRevokesRef = useRef(new Set());
   useEffect(() => () => {
     imagesRef.current.forEach(i => URL.revokeObjectURL(i.preview));
+    pendingRevokesRef.current.forEach(url => URL.revokeObjectURL(url));
   }, []);
 
   // Chiude il menu "+" della sidebar al click fuori
@@ -187,8 +191,10 @@ export default function App() {
     if (removed.length === 0) return;
     setImages(prev => prev.filter(i => !set.has(i.id)));
     let undone = false;
+    removed.forEach(({ it }) => pendingRevokesRef.current.add(it.preview)); // in attesa di revoke
     const undo = () => {
       undone = true;
+      removed.forEach(({ it }) => pendingRevokesRef.current.delete(it.preview));
       setImages(prev => {
         const next = [...prev];
         removed.slice().sort((a, b) => a.idx - b.idx)
@@ -202,7 +208,9 @@ export default function App() {
       msg: `Removed ${removed.length} card${removed.length > 1 ? 's' : ''}`,
       action: { label: 'Undo', onClick: undo },
     });
-    setTimeout(() => { if (!undone) removed.forEach(({ it }) => URL.revokeObjectURL(it.preview)); }, 5300);
+    setTimeout(() => {
+      if (!undone) removed.forEach(({ it }) => { URL.revokeObjectURL(it.preview); pendingRevokesRef.current.delete(it.preview); });
+    }, 5300);
   };
 
   const handleRemove = (id) => removeWithUndo([id]);

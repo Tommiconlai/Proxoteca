@@ -391,6 +391,9 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                 const name = img.name || (img.file?.name || `Card ${page * perPage + i + 1}`).replace(/\.[^.]+$/, '');
                                 const lowRes = img.w && img.w < dpi * 0.5 * (cardW / 25.4);
                                 const isSel = selected.has(img.id);
+                                // Abbondanza EFFETTIVA renderizzata (lo stile globale può sovrascrivere il
+                                // modo per-carta): l'etichetta deve dire ciò che esce, non il solo modo carta.
+                                const resolvedBleed = resolveBleedMode(img.bleedMode, bleedStyle);
                                 return (
                                     <div
                                         key={img.id}
@@ -430,11 +433,11 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                         </button>
                                         <button
                                             type="button"
-                                            className={`preview-card-bleed${img.bleedMode !== 'none' ? ' on' : ''}`}
+                                            className={`preview-card-bleed${resolvedBleed !== 'none' ? ' on' : ''}`}
                                             onClick={(e) => { e.stopPropagation(); onToggleBleed(img.id); }}
-                                            title={`Bleed: ${bleedLabel(img.bleedMode)} (click to change)`}
-                                            aria-label={`Bleed ${name}: ${bleedLabel(img.bleedMode)}`}
-                                            aria-pressed={img.bleedMode !== 'none'}
+                                            title={`Bleed: ${bleedLabel(resolvedBleed)} (click to change)`}
+                                            aria-label={`Bleed ${name}: ${bleedLabel(resolvedBleed)}`}
+                                            aria-pressed={resolvedBleed !== 'none'}
                                         >
                                             <IconFrame size={11} />
                                         </button>

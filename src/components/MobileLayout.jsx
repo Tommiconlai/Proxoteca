@@ -54,6 +54,7 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
         <div className={`help${helpOpen ? ' open' : ''}`}>
           <button type="button" className="help-btn" aria-label="How it works" onClick={() => setHelpOpen((o) => !o)}>?</button>
           <div className="help-tooltip" role="tooltip">
+            <button type="button" className="help-tooltip-close" aria-label="Close help" onClick={() => setHelpOpen(false)}>✕</button>
             <strong>How it works</strong>
             <ol>
               <li><b>Add cards</b> — tap <b>＋</b> to upload images or import from Scryfall (a card list or a deck link).</li>
@@ -74,9 +75,18 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
               <IconSliders /><span>Settings</span>
             </button>
             <div className="ct-cluster">
-              <button className="ct-btn ct-danger" onClick={actions.onClear} disabled={actions.count === 0} aria-label="Delete all"><IconTrash size={20} /></button>
-              <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add cards"><IconPlus size={26} /></button>
-              <button className="ct-btn ct-save" onClick={actions.onSave} disabled={actions.count === 0} aria-label="Save list"><IconList size={20} /></button>
+              <div className="ct-item">
+                <button className="ct-btn ct-danger" onClick={actions.onClear} disabled={actions.count === 0} aria-label="Delete all"><IconTrash size={20} /></button>
+                <span className="ct-lbl">Delete</span>
+              </div>
+              <div className="ct-item">
+                <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add cards"><IconPlus size={26} /></button>
+                <span className="ct-lbl">Add</span>
+              </div>
+              <div className="ct-item">
+                <button className="ct-btn ct-save" onClick={actions.onSave} disabled={actions.count === 0} aria-label="Save list"><IconList size={20} /></button>
+                <span className="ct-lbl">Save</span>
+              </div>
             </div>
             <button className="ct-nav" onClick={() => setPage('export')} aria-label="Export PDF">
               <IconFile size={22} /><span>Export</span>
@@ -99,6 +109,7 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
           )}
           <CardActionSheet
             card={previewProps.images.find((i) => i.id === sel) || null}
+            bleedStyle={settingsProps.bleedStyle}
             onClose={() => setSel(null)}
             onChangeArt={previewProps.onChangeArt}
             onDuplicate={previewProps.onDuplicate}
