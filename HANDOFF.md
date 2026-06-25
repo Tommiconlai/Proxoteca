@@ -95,7 +95,31 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **Re-critique P1 regressions — multi-select rough edges (most recent):** an impeccable re-`critique`
+- **Re-critique P2 backlog — 8 fixes (most recent):** cleared the deferred P2s from the re-`critique`. All
+  live-verified + an independent reviewer pass found no bugs; lint + build green.
+  - **Generate-PDF success toast** ([App.jsx](src/App.jsx) `handleGenerate`): the primary export was silent;
+    now emits `{kind:'success', msg:'PDF ready — check your downloads.'}` (Toast infra already existed).
+  - **Undo for delete** (single + bulk): new `removeWithUndo(ids)` — captures items+indices (pure, from current
+    `images`), defers `URL.revokeObjectURL` to a 5 s timer that **only fires if not undone**, and shows a toast
+    with an **Undo** action that re-inserts at original indices. `Toast` gained an optional `action:{label,onClick}`
+    button (`.toast-action`, `stopPropagation` so it doesn't trigger the toast's tap-to-close). `handleRemove` +
+    `handleRemoveMany` both route through it. (Clear-all keeps its confirm.)
+  - **Bulk-Bleed converges + feedback** (`handleBleedMany`): replaced the per-card `nextBleedMode` cycle (which
+    never made a mixed selection uniform) with an **absolute target** — if any selected card is `none` → all
+    `stretch`, else all `none` — plus a toast "Bleed on/off for N cards".
+  - **Ctrl+A scope label**: the bulk-count shows **"N selected · spans pages"** when the selection includes
+    off-page cards (`selectedSpansPages` memo), so a blind Ctrl+A→Delete is signalled.
+  - **Multi-select discoverability**: a persistent `.preview-hint` ("Ctrl/⌘ or Shift-click to select multiple")
+    under the count when >1 card and nothing selected, + a line in the desktop `?` help dialog.
+  - **Keyboard selection**: `Space` on a focused card toggles selection (Enter still changes art); `aria-pressed`
+    now always set in select mode (was only-when-selected). Verified Space toggles without firing change-art.
+  - **Card label = real Scryfall name**: per-card `aria-label`s now use `img.name` (the Scryfall card name, already
+    stored) and fall back to the filename; corner buttons (dup/bleed/delete) use the same `name`.
+  - **Degenerate-sheet warning**: when `info.perPage === 0` (sheet too small / card bigger than sheet) with cards
+    present, a `.preview-warn-cta` "No cards fit this sheet" overlay replaces the silent blank page.
+  - Also removed a stale "(⬇)" from the mobile help (Save list is the list glyph now). **Still deferred** (P3 +
+    explicit): drag-reorder, mobile batch, per-card tab-order weight, `.bulk-btn:active` polish, `Clear` icon.
+- **Re-critique P1 regressions — multi-select rough edges:** an impeccable re-`critique`
   (multi-agent: 6 lenses + adversarial verify of every finding) scored **31/40** (up from 29) but flagged that
   the desktop multi-select feature shipped with **2 P1 regressions**, both fixed here in `PagePreview.jsx`:
   - **Trapped pager:** the bulk bar and the pager were the two branches of one footer ternary, so selecting any

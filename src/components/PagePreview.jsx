@@ -257,6 +257,13 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
         () => images.filter(i => selected.has(i.id)).map(i => i.id),
         [images, selected],
     );
+    // Selezione che si estende oltre la pagina corrente (per l'etichetta "spans pages",
+    // così Ctrl+A → Delete non cancella carte invisibili senza preavviso).
+    const selectedSpansPages = useMemo(() => {
+        const start = page * perPage;
+        const pageIds = new Set(images.slice(start, start + perPage).map(i => i.id));
+        return selectedIds.some(id => !pageIds.has(id));
+    }, [images, selectedIds, page, perPage]);
     const clearSel = () => setSelected(new Set());
     const toggleSel = (id) => setSelected(prev => {
         const n = new Set(prev);
@@ -318,6 +325,14 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                             )}
                         </div>
                     )}
+                    {/* Foglio degenere: nessuna cella entra (foglio troppo piccolo o carta più
+                        grande del foglio) → le carte sparirebbero su una pagina bianca senza spiegazione. */}
+                    {images.length > 0 && info.perPage === 0 && (
+                        <div className="preview-empty-cta preview-warn-cta" role="alert">
+                            <p className="empty-cta-title">No cards fit this sheet</p>
+                            <p className="empty-cta-sub">The sheet is too small for the card size. Increase the sheet, or reduce the card size or bleed.</p>
+                        </div>
+                    )}
                     {images.length > 0 && (
                         <p className="sr-only" aria-live="polite">
                             Print sheet preview: {images.length} card{images.length !== 1 ? 's' : ''} placed, page {page + 1} of {totalPages}.
@@ -332,7 +347,8 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                 const row = Math.floor(i / info.cols);
                                 const left = (info.offsetX + col * info.cellW + bleedMm) * scale;
                                 const top = (info.offsetY + row * info.cellH + bleedMm) * scale;
-                                const name = (img.file?.name || `Card ${page * perPage + i + 1}`).replace(/\.[^.]+$/, '');
+                                // Nome carta vero (Scryfall) se presente, altrimenti il filename senza estensione.
+                                const name = img.name || (img.file?.name || `Card ${page * perPage + i + 1}`).replace(/\.[^.]+$/, '');
                                 const lowRes = img.w && img.w < dpi * 0.5 * (cardW / 25.4);
                                 const isSel = selected.has(img.id);
                                 return (
@@ -354,16 +370,21 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                             type="button"
                                             className="card-surface"
                                             onClick={(e) => handleCardClick(e, img.id)}
-                                            title="Change art — Ctrl-click to select"
-                                            aria-label={`${name}. Change art. Ctrl or Shift click to select.`}
-                                            aria-pressed={isSel || undefined}
+                                            onKeyDown={(e) => {
+                                                // Space = seleziona/deseleziona (equivalente da tastiera del
+                                                // ctrl/shift-click); Enter resta "cambia art" (click nativo).
+                                                if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleSel(img.id); }
+                                            }}
+                                            title="Change art (Enter) — Ctrl-click or Space to select"
+                                            aria-label={`${name}. Change art. Ctrl/Shift-click or press Space to select.`}
+                                            aria-pressed={isSel}
                                         />
                                         <button
                                             type="button"
                                             className="preview-card-dup"
                                             onClick={(e) => { e.stopPropagation(); onDuplicate(img.id); }}
                                             title="Duplicate"
-                                            aria-label={`Duplicate ${img.file.name}`}
+                                            aria-label={`Duplicate ${name}`}
                                         >
                                             <IconCopy size={11} />
                                         </button>
@@ -372,7 +393,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                             className={`preview-card-bleed${img.bleedMode !== 'none' ? ' on' : ''}`}
                                             onClick={(e) => { e.stopPropagation(); onToggleBleed(img.id); }}
                                             title={`Bleed: ${bleedLabel(img.bleedMode)} (click to change)`}
-                                            aria-label={`Bleed: ${bleedLabel(img.bleedMode)}`}
+                                            aria-label={`Bleed ${name}: ${bleedLabel(img.bleedMode)}`}
                                             aria-pressed={img.bleedMode !== 'none'}
                                         >
                                             <IconFrame size={11} />
@@ -382,7 +403,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                                             className="preview-card-delete"
                                             onClick={(e) => { e.stopPropagation(); onRemove(img.id); }}
                                             title="Remove"
-                                            aria-label={`Remove ${img.file.name}`}
+                                            aria-label={`Remove ${name}`}
                                         >
                                             <IconX size={12} />
                                         </button>
@@ -401,7 +422,7 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                     sulla pagina corrente quando c'è una selezione su un foglio multi-pagina). */}
                 {selectMode && selectedIds.length > 0 && (
                     <div className="bulk-bar" role="toolbar" aria-label="Selected cards">
-                        <span className="bulk-count">{selectedIds.length} selected</span>
+                        <span className="bulk-count">{selectedIds.length} selected{selectedSpansPages ? ' · spans pages' : ''}</span>
                         <button type="button" className="bulk-btn" onClick={() => onBleedMany?.(selectedIds)}>
                             <IconFrame size={13} /> Bleed
                         </button>
@@ -432,6 +453,10 @@ export default function PagePreview({ images, formatKey, bleedMm, bleedStyle, dp
                     <span className="preview-count">
                         {images.length} img{missing > 0 ? ` · ${missing} to fill the page` : ''}
                     </span>
+                )}
+                {/* Suggerimento discreto: rende scopribile la multi-selezione (altrimenti solo hover/aria). */}
+                {selectMode && images.length > 1 && selectedIds.length === 0 && (
+                    <span className="preview-hint">Ctrl/⌘ or Shift-click to select multiple</span>
                 )}
             </div>
         </div>

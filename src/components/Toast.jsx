@@ -7,7 +7,16 @@ export default function Toast({ toast, onClose }) {
   if (!toast) return null;
   return (
     <div className={`toast toast-${toast.kind || 'success'}`} role="status" aria-live="polite" onClick={onClose}>
-      {toast.msg}
+      <span>{toast.msg}</span>
+      {toast.action && (
+        <button
+          type="button"
+          className="toast-action"
+          onClick={(e) => { e.stopPropagation(); toast.action.onClick(); }}
+        >
+          {toast.action.label}
+        </button>
+      )}
     </div>
   );
 }

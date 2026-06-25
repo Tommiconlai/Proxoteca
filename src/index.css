@@ -1192,9 +1192,25 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 0.85rem; line-height: 1.4; text-align: center;
   cursor: pointer;
   animation: fade-up 0.2s ease both;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
 }
 .toast-success { border-color: rgba(46, 204, 113, 0.5); }
 .toast-error { border-color: var(--danger); }
+
+/* Azione opzionale nel toast (es. Undo dopo una rimozione). */
+.toast-action {
+  flex: none;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent-light);
+  font-family: var(--font);
+  font-size: 0.8rem; font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.toast-action:hover { background: var(--accent); color: #1f1606; }
 
 /* ============================================================
    COOKIE CONSENT BANNER
@@ -1302,6 +1318,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
   pointer-events: auto;
   width: auto; /* il .btn-add della sidebar è full-width: qui no */
   margin-top: 8px;
+}
+
+/* Avviso "nessuna carta entra nel foglio": stesso overlay, tono d'allerta. */
+.preview-warn-cta .empty-cta-title { color: #b42318; } /* rosso scuro: leggibile sul foglio bianco */
+.preview-warn-cta .empty-cta-sub { color: #7a2d1c; }
+
+/* Suggerimento discreto sotto al contatore (scopribilità multi-selezione). */
+.preview-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
 }
 
 /* ── Overlay elimina su ogni carta (hover: bordo rosso + × angolo) ── */

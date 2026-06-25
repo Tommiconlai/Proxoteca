@@ -164,13 +164,34 @@ export default function App() {
   // Per le carte già al vivo: Bleed style → "Bleed in art", o il toggle per-carta.
   const handleImagesAdded = (files) => addItems(files.map(file => ({ file, bleedMode: 'none' })));
 
-  const handleRemove = (id) => {
-    setImages(prev => {
-      const item = prev.find(i => i.id === id);
-      if (item) URL.revokeObjectURL(item.preview);
-      return prev.filter(i => i.id !== id);
+  // Rimozione con UNDO: niente revoke immediato. Cattura gli item + indici (puro,
+  // da `images` corrente), mostra un toast con azione Undo, e revoca gli object URL
+  // solo se l'utente NON annulla (oltre la vita del toast).
+  const removeWithUndo = (ids) => {
+    const set = new Set(ids);
+    const removed = images.map((it, idx) => ({ it, idx })).filter(x => set.has(x.it.id));
+    if (removed.length === 0) return;
+    setImages(prev => prev.filter(i => !set.has(i.id)));
+    let undone = false;
+    const undo = () => {
+      undone = true;
+      setImages(prev => {
+        const next = [...prev];
+        removed.slice().sort((a, b) => a.idx - b.idx)
+          .forEach(({ it, idx }) => next.splice(Math.min(idx, next.length), 0, it));
+        return next;
+      });
+      setToast(null);
+    };
+    setToast({
+      kind: 'success',
+      msg: `Removed ${removed.length} card${removed.length > 1 ? 's' : ''}`,
+      action: { label: 'Undo', onClick: undo },
     });
+    setTimeout(() => { if (!undone) removed.forEach(({ it }) => URL.revokeObjectURL(it.preview)); }, 5000);
   };
+
+  const handleRemove = (id) => removeWithUndo([id]);
 
   // Elimina tutte: passa SEMPRE dalla conferma (desktop + mobile export + mobile cards).
   const handleClearAll = () => {
@@ -191,17 +212,17 @@ export default function App() {
     it.id === id ? { ...it, bleedMode: nextBleedMode(it.bleedMode) } : it,
   ));
 
-  // Azioni in blocco sulla selezione (preview desktop): un solo setImages → un render.
-  const handleRemoveMany = (ids) => {
-    const set = new Set(ids);
-    setImages(prev => {
-      prev.forEach(i => { if (set.has(i.id)) URL.revokeObjectURL(i.preview); });
-      return prev.filter(i => !set.has(i.id));
-    });
-  };
+  // Azioni in blocco sulla selezione (preview desktop). Delete passa dall'undo.
+  const handleRemoveMany = (ids) => removeWithUndo(ids);
+  // Bleed in blocco: esito UNIFORME e prevedibile (no cicli per-carta). Se qualche
+  // carta selezionata è senza abbondanza → accendile tutte (stretch); altrimenti
+  // spegnile tutte. Un solo setImages + feedback toast.
   const handleBleedMany = (ids) => {
     const set = new Set(ids);
-    setImages(prev => prev.map(it => set.has(it.id) ? { ...it, bleedMode: nextBleedMode(it.bleedMode) } : it));
+    const anyOff = images.some(it => set.has(it.id) && it.bleedMode === 'none');
+    const target = anyOff ? 'stretch' : 'none';
+    setImages(prev => prev.map(it => set.has(it.id) ? { ...it, bleedMode: target } : it));
+    setToast({ kind: 'success', msg: `Bleed ${anyOff ? 'on' : 'off'} for ${ids.length} card${ids.length > 1 ? 's' : ''}` });
   };
 
   // Duplica una carta (preview con object URL nuovo, inserita dopo l'originale).
@@ -296,6 +317,7 @@ export default function App() {
       } else {
         await generatePDF(images, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet, quality);
       }
+      setToast({ kind: 'success', msg: 'PDF ready — check your downloads.' });
     } catch (err) {
       setError(err.message || 'Error generating the PDF.');
     } finally {
@@ -380,7 +402,7 @@ export default function App() {
             <ol>
               <li><b>Add cards</b> — upload images, or import from Scryfall (paste a card list or a deck link).</li>
               <li><b>Set up</b> — sheet &amp; card size, bleed and crop marks in the sidebar.</li>
-              <li><b>Tweak</b> — click a card to change its printing; hover a card to duplicate, toggle bleed, or remove it.</li>
+              <li><b>Tweak</b> — click a card to change its printing; hover a card to duplicate, toggle bleed, or remove it. <b>Ctrl/⌘ or Shift-click</b> cards to select several, then bleed or delete them together.</li>
               <li><b>Export</b> — <b>Generate PDF</b> (print-ready). <b>Save list</b> exports your Scryfall cards as a reloadable deck list.</li>
             </ol>
           </div>
