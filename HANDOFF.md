@@ -68,7 +68,7 @@ before restarting.
 | `src/utils/pdfGenerator.js` | Grid math (`getGridInfo(formatKey, bleedMm, cardW=63, cardH=88, customSheet=null)`; `formatKey==='custom'` uses `customSheet` mm dims, else `PAPER_FORMATS`) + `generatePDF(items, formatKey, bleedMm, dpi, bleedStyle, cardW, cardH, cropMarks, cropStyle, customSheet)` (jspdf, dynamically imported) + `drawCardWithBleed` (stretch/mirror/black bleed) + `resolveBleedMode` (per-card mode × global style) + `drawCropMarks(…, style)` (`lines`/`corners`) + `cropMarkSpan` (clamped crop marks) |
 | `src/utils/scryfall.js` | `parseCardList` (text → `{qty,name,set,collector}`; collector keeps **original case** — Scryfall `/cards/collection` is case-sensitive on it, e.g. The List `TMP-294`) + `fetchScryfallImages` (`/cards/collection` batched, printing-pinned via name\|set\|collector keys, downloads PNGs as `File`; DFC → both faces) + `fetchPrints` + `downloadAsFile` + `fetchDeckList` (deck link → text, via `fetchViaProxy` = `CORS_PROXIES` fallback chain: allorigins → codetabs → corsproxy.io) + `scryfallFetch` (retry 429/5xx + network, clear error on Scryfall outage) + `deckLine(qty,name,set,cn)` (builds `qty Name (SET) cn` so deck links pin the **edition chosen in the deck**) + `buildDeckList(items)` (placed cards → deck-list text for "Save list"; front faces only, custom uploads excluded) |
 | `src/utils/scryfall.selfcheck.js` | `node`-runnable assert check for `parseCardList` (no framework). Run: `node src/utils/scryfall.selfcheck.js` |
-| `src/components/icons.jsx` | Custom lucide-style SVG icon set (currentColor), incl. `IconPlus`, `IconDownload`, `IconCopy`, `IconFrame` + `Logo` (Proxoteca brandmark: gold-gradient circle + white burst, inline; same art as `public/favicon.svg`, used in the header) |
+| `src/components/icons.jsx` | Custom lucide-style SVG icon set (currentColor), incl. `IconPlus`, `IconDownload`, `IconList` (Save list — distinct from the download/export arrows), `IconCopy`, `IconFrame` + `Logo` (Proxoteca brandmark: gold-gradient circle + white burst, inline; same art as `public/favicon.svg`, used in the header) |
 | `src/index.css` | All styling + design tokens |
 | `public/` (favicons) | Proxoteca icon set: `favicon.svg/.ico`, `favicon-16/32/48/192/512.png`, `apple-touch-icon.png`, `site.webmanifest`. Linked in `index.html` with root-absolute paths → Vite rewrites to `./` via `base:'./'` (Pages-safe); manifest icon `src`s are relative. **`favicon.svg` is the gold-circle + white-burst mark** (matches the header). ⚠️ The **raster PNG/ico/apple-touch are still the old dark-`#16181D`-square** version — no local rasterizer (sharp won't install); re-export from the design tool to match. |
 
@@ -95,7 +95,14 @@ Tokens at the top of `src/index.css`. Also recorded in this project's Claude mem
 
 ## Done recently
 
-- **UX critique P2s — multi-select batch ops + canvas a11y (most recent):** from the same impeccable `critique`.
+- **UX critique P3 — Save-list icon disambiguation (most recent):** the mobile action bar had **two adjacent
+  down-arrow glyphs** — Save list (`IconDownload` ⬇) next to Export (`IconFile`, whose path includes a download
+  arrow) — and the cluster buttons are icon-only, so "which one makes the PDF?" was ambiguous. Added a distinct
+  **`IconList`** (elenco/list glyph) and swapped it into **Save list** on both mobile (`MobileLayout` `.ct-save`)
+  and desktop (`App` `.btn-save`, keeps its text label too). `IconDownload` stays for "Import from Scryfall"
+  (download = fetch, correct). Also dropped a now-stale "⬇" from the mobile Export-page hint. Verified live (375px):
+  Save list reads as a list, clearly separate from Export; lint + build green.
+- **UX critique P2s — multi-select batch ops + canvas a11y:** from the same impeccable `critique`.
   - **Desktop multi-select** in `PagePreview`: **Ctrl/Cmd/Shift-click** a card toggles selection (plain click stays
     "change art" → novices unaffected). Selected cards get a gold outline + `accent-dim` wash. A **bulk bar** replaces
     the preview footer when ≥1 selected: **N selected · Bleed · Delete · Clear**. Keys: **Del/Backspace** = delete

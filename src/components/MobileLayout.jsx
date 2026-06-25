@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Logo, IconFile, IconDownload, IconTrash, IconPlus, IconImage } from './icons';
+import { Logo, IconFile, IconDownload, IconList, IconTrash, IconPlus, IconImage } from './icons';
 import PageSettings from './PageSettings';
 import PagePreview from './PagePreview';
 import CardActionSheet from './CardActionSheet';
@@ -65,7 +65,7 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
             <div className="ct-cluster">
               <button className="ct-btn ct-danger" onClick={actions.onClear} disabled={actions.count === 0} aria-label="Delete all"><IconTrash size={20} /></button>
               <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add cards"><IconPlus size={26} /></button>
-              <button className="ct-btn ct-save" onClick={actions.onSave} disabled={actions.count === 0} aria-label="Save list"><IconDownload size={20} /></button>
+              <button className="ct-btn ct-save" onClick={actions.onSave} disabled={actions.count === 0} aria-label="Save list"><IconList size={20} /></button>
             </div>
             <button className="ct-nav" onClick={() => setPage('export')} aria-label="Export PDF">
               <IconFile size={22} /><span>Export</span>
@@ -116,7 +116,7 @@ export default function MobileLayout({ settingsProps, previewProps, actions, add
             <button className="btn-generate" onClick={actions.onGenerate} disabled={actions.count === 0 || actions.loading}>
               {actions.loading ? <><span className="spinner" /> Generating…</> : <><IconFile size={18} /> Generate PDF</>}
             </button>
-            <p className="field-hint">Use <b>Save list</b> (⬇, bottom bar) to export your Scryfall cards as a reloadable deck list.</p>
+            <p className="field-hint">Use <b>Save list</b> (bottom bar) to export your Scryfall cards as a reloadable deck list.</p>
             {actions.error && <div className="info-box info-box-error"><span>{actions.error}</span></div>}
           </div>
         </MobilePage>

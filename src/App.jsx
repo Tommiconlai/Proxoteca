@@ -14,7 +14,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { generatePDF, getGridInfo, PAPER_FORMATS, nextBleedMode } from './utils/pdfGenerator';
 import { DEFAULT_PROFILE_ID, UPLOAD_ID, getProfileMeta, loadBundledProfileBytes } from './utils/iccProfiles';
 import { buildDeckList } from './utils/scryfall';
-import { IconFile, IconAlert, IconTrash, IconDownload, IconImage, IconPlus, Logo } from './components/icons';
+import { IconFile, IconAlert, IconTrash, IconDownload, IconList, IconImage, IconPlus, Logo } from './components/icons';
 
 // Lettura numerica da localStorage con default (null/NaN → default, 0 valido).
 const readNum = (k, d) => {
@@ -432,7 +432,7 @@ export default function App() {
             </button>
             <div className="export-row">
               <button className="btn-secondary btn-save" onClick={handleSaveProject} disabled={images.length === 0}>
-                <IconDownload size={15} /> Save list
+                <IconList size={15} /> Save list
               </button>
               <button className="btn-secondary" onClick={handleClearAll} disabled={images.length === 0}>
                 <IconTrash size={15} /> Delete all
